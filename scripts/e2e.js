@@ -318,6 +318,29 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return "install id: " + [...ids][0];
   });
 
+  await test("hero header links to the same full-entry URL as the footer link", async () => {
+    const hrefs = await page.evaluate(() => {
+      const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
+      return {
+        hero: sr.querySelector(".qp-hero__link").getAttribute("href"),
+        foot: sr.querySelector(".qp-foot .qp-link").getAttribute("href")
+      };
+    });
+    if (hrefs.hero !== hrefs.foot) throw new Error(`hero href (${hrefs.hero}) != footer href (${hrefs.foot})`);
+    if (!/quickpronounce\.site\/\?word=/.test(hrefs.hero)) throw new Error("href doesn't look like a real entry URL: " + hrefs.hero);
+
+    // click handler calls ctx.openUrl -> window.open() in the content
+    // script's isolated JS world, a different realm than page.evaluate's -
+    // so verify the real side effect (an actual new tab) instead of mocking
+    // window.open, which page.evaluate can't reach from here.
+    const newTargetPromise = browser.waitForTarget((t) => t.url() === hrefs.hero, { timeout: 8000 });
+    await page.evaluate(() => document.getElementById("qp-quickpronounce-host").shadowRoot.querySelector(".qp-hero__link").click());
+    const newTarget = await newTargetPromise;
+    const newPage = await newTarget.page();
+    if (newPage) await newPage.close();
+    return hrefs.hero;
+  });
+
   await test("Esc dismisses the card", async () => {
     await page.keyboard.press("Escape");
     await page.waitForFunction(

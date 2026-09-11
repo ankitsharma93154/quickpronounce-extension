@@ -99,12 +99,15 @@
     "}",
     ".qp-hero::before { width:120px; height:120px; top:-46px; right:-26px; }",
     ".qp-hero::after { width:190px; height:190px; top:-86px; right:-66px; border-color:rgba(255,255,255,0.13); }",
+    /* the word+pos block, linked out to the full entry - same destination as
+       "View full definition" below, so there are two ways to reach it */
+    ".qp-hero__link { position:relative; z-index:1; display:block; text-decoration:none; color:inherit; border-radius:var(--radius-sm); }",
     ".qp-hero__word {",
-    "  position:relative; z-index:1; font-size:19px; font-weight:800; letter-spacing:-0.01em;",
+    "  font-size:19px; font-weight:800; letter-spacing:-0.01em;",
     "  color:#fff; line-height:1.2; word-break:break-word;",
     "}",
     ".qp-hero__pos {",
-    "  position:relative; z-index:1; font-size:13px; font-weight:600; text-transform:capitalize;",
+    "  font-size:13px; font-weight:600; text-transform:capitalize;",
     "  color:rgba(255,255,255,0.85); margin-top:2px;",
     "}",
     ".qp-hero__pos:empty { display:none; }",
@@ -115,7 +118,9 @@
     "  transition:background-color var(--transition);",
     "}",
     ".qp-hero__close:hover { background:rgba(255,255,255,0.34); }",
-    ".qp-hero__close:focus-visible { outline:2px solid #fff; outline-offset:2px; }",
+    /* shared white focus ring for anything sitting on the purple hero - the
+       usual purple .qp-focusable ring would be invisible against it */
+    ".qp-focusable-light:focus-visible { outline:2px solid #fff; outline-offset:2px; }",
 
     ".qp-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }",
     ".qp-chip, .qp-chip--muted {",

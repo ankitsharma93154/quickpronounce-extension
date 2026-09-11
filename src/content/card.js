@@ -90,12 +90,21 @@
 
     // ---- hero: word, part of speech, close ----
     var hero = el("div", "qp-hero");
-    hero.appendChild(el("div", "qp-hero__word", m.word));
+    // The whole word/pos block links out to the full entry, same destination
+    // as "View full definition" below - one consistent way to get there.
+    var heroLink = el("a", "qp-hero__link qp-focusable-light");
+    heroLink.href = m.url;
+    heroLink.appendChild(el("div", "qp-hero__word", m.word));
     // .qp-hero__pos collapses itself via :empty when there is no label.
     var posLine = el("div", "qp-hero__pos", (senses[0] && senses[0].pos) || "");
-    hero.appendChild(posLine);
+    heroLink.appendChild(posLine);
+    heroLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      ctx.openUrl(m.url);
+    });
+    hero.appendChild(heroLink);
     if (!ctx.compact) {
-      var x = el("button", "qp-hero__close", "×");
+      var x = el("button", "qp-hero__close qp-focusable-light", "×");
       x.type = "button";
       x.setAttribute("aria-label", "Close");
       x.addEventListener("click", ctx.onClose);
