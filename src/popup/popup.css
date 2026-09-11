@@ -101,6 +101,10 @@ body {
 .pp-go:hover { box-shadow: var(--shadow-primary-md); transform: translateY(-1px); }
 
 .pp-result { margin-top: 10px; }
+/* card.css.js gives the card a fixed 320px width for its floating on-page
+   use; in the popup it should instead fill the same width as the search
+   row above it (input + Go button) rather than sit narrower than them. */
+.pp-result .qp-card { box-sizing: border-box; width: 100%; max-width: none; }
 
 .pp-recents { margin-top: 12px; }
 .pp-recents-head {

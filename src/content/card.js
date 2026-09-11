@@ -29,6 +29,11 @@
     '<path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>';
 
   var AUDIO_TIMEOUT_MS = 12000;
+  // Every real sense is still in the data (pickSenses in api.js does not cut
+  // anything) - this only bounds how many tabs the inline Meaning header
+  // row renders, so one pathologically ambiguous word can't overflow it.
+  // Nothing observed so far ("record" -> 4) has come close to this.
+  var MAX_SENSE_TABS = 4;
 
   function el(tag, cls, text) {
     var node = document.createElement(tag);
@@ -43,6 +48,13 @@
 
   function accentLabel(a) {
     return a === "uk" ? "UK" : "US";
+  }
+
+  function pronRow(label, ipa) {
+    var row = el("div", "qp-pron-row");
+    row.appendChild(el("span", "qp-pron-row__accent", label));
+    row.appendChild(el("span", "qp-pron-row__ipa", ipa));
+    return row;
   }
 
   // --- state renderers ----------------------------------------------------
@@ -65,9 +77,6 @@
     var m = view.model;
     var accent = ctx.accent === "uk" ? "uk" : "us";
     var card = el("div", "qp-card");
-    card.appendChild(el("div", "qp-card__bar"));
-
-    var body = el("div", "qp-card__body");
 
     // Every distinct part of speech the word has, primary sense first (see
     // pickSenses in api.js). Falls back to the single definition/partOfSpeech
@@ -79,21 +88,22 @@
           ? [{ pos: m.partOfSpeech, definition: m.definition }]
           : [];
 
-    var head = el("div", "qp-card__head");
-    var titleWrap = el("div");
-    titleWrap.appendChild(el("div", "qp-word", m.word));
-    // .qp-pos collapses itself via :empty when there is no label to show.
-    var posLine = el("div", "qp-pos", (senses[0] && senses[0].pos) || "");
-    titleWrap.appendChild(posLine);
-    head.appendChild(titleWrap);
+    // ---- hero: word, part of speech, close ----
+    var hero = el("div", "qp-hero");
+    hero.appendChild(el("div", "qp-hero__word", m.word));
+    // .qp-hero__pos collapses itself via :empty when there is no label.
+    var posLine = el("div", "qp-hero__pos", (senses[0] && senses[0].pos) || "");
+    hero.appendChild(posLine);
     if (!ctx.compact) {
-      var x = el("button", "qp-x qp-focusable", "×");
+      var x = el("button", "qp-hero__close", "×");
       x.type = "button";
       x.setAttribute("aria-label", "Close");
       x.addEventListener("click", ctx.onClose);
-      head.appendChild(x);
+      hero.appendChild(x);
     }
-    body.appendChild(head);
+    card.appendChild(hero);
+
+    var body = el("div", "qp-card__body");
 
     // context chips
     var chips = el("div", "qp-chips");
@@ -112,83 +122,65 @@
     }
     if (any) body.appendChild(chips);
 
-    // IPA
-    var ipa = m.ipa && (accent === "uk" ? m.ipa.uk : m.ipa.us);
-    var otherIpa = m.ipa && (accent === "uk" ? m.ipa.us : m.ipa.uk);
-    if (ipa) {
-      var ipaLine = el("div", "qp-line");
-      var lbl = el("div", "qp-label");
-      lbl.textContent = "IPA";
-      lbl.appendChild(el("span", "qp-accent-tag", accentLabel(accent)));
-      ipaLine.appendChild(lbl);
-      ipaLine.appendChild(el("div", "qp-ipa", ipa));
-      if (otherIpa && otherIpa !== ipa) {
-        ipaLine.appendChild(
-          el("div", "qp-ipa qp-ipa--alt", accentLabel(accent === "uk" ? "us" : "uk") + "  " + otherIpa)
-        );
-      }
-      body.appendChild(ipaLine);
+    // pronunciation table: both accents together, not just the featured one
+    var hasUs = !!(m.ipa && m.ipa.us);
+    var hasUk = !!(m.ipa && m.ipa.uk);
+    if (hasUs || hasUk) {
+      body.appendChild(el("div", "qp-label", "Pronunciation"));
+      var pron = el("div", "qp-pron");
+      if (hasUs) pron.appendChild(pronRow("US", m.ipa.us));
+      if (hasUk) pron.appendChild(pronRow("UK", m.ipa.uk));
+      body.appendChild(pron);
     }
 
-    // respelling
+    // respelling + syllable count, one line, follows the accent preference -
+    // the respelling string already encodes stress (the stressed syllable is
+    // UPPERCASE), so there is no need for a separate coloured breakdown too.
     var respell = m.respell && (accent === "uk" ? m.respell.uk : m.respell.us);
+    var sylCount = m.syllableCount && (accent === "uk" ? m.syllableCount.uk : m.syllableCount.us);
     if (respell) {
-      var rLine = el("div", "qp-line");
-      rLine.appendChild(el("div", "qp-label", "Respelling"));
-      rLine.appendChild(el("div", "qp-respell", respell));
+      var rLine = el("div", "qp-respell-line");
+      rLine.appendChild(el("b", null, respell));
+      if (sylCount) {
+        rLine.appendChild(document.createTextNode(" "));
+        rLine.appendChild(el("span", "qp-dim", "· " + sylCount + (sylCount === 1 ? " syllable" : " syllables")));
+      }
       body.appendChild(rLine);
-    }
-
-    // syllables + stress
-    var syls = m.syllables && (accent === "uk" ? m.syllables.uk : m.syllables.us);
-    if (Array.isArray(syls) && syls.length) {
-      var sLine = el("div", "qp-line");
-      var count = accent === "uk" ? m.syllableCount.uk : m.syllableCount.us;
-      sLine.appendChild(el("div", "qp-label", "Syllables (" + count + ")"));
-      var row = el("div", "qp-syls");
-      syls.forEach(function (syl, i) {
-        var stress = syl.stress === 1 ? "1" : syl.stress === 2 ? "2" : "0";
-        var chunk = el("span", "qp-syl qp-syl--" + stress, syl.text || "");
-        chunk.title =
-          syl.stress === 1 ? "Primary stress" : syl.stress === 2 ? "Secondary stress" : "Unstressed";
-        row.appendChild(chunk);
-        if (i < syls.length - 1) row.appendChild(el("span", "qp-syl-sep", "·"));
-      });
-      sLine.appendChild(row);
-      body.appendChild(sLine);
     }
 
     // meaning: a part-of-speech switcher when the word has more than one, so
     // an ambiguous word (e.g. "record", "bank", "wind") is never just one
-    // silent guess. Each tab swaps the definition and the pos line above
-    // in place; nothing is re-fetched, every sense came back with the
-    // original lookup.
-    if (senses.length > 1) {
-      var meaningLine = el("div", "qp-line");
-      meaningLine.appendChild(el("div", "qp-label", "Meaning"));
-      var senseRow = el("div", "qp-senses");
-      var defBox = el("div", "qp-def", senses[0].definition);
-      senses.forEach(function (s, i) {
-        var tab = el("button", "qp-sense" + (i === 0 ? " qp-sense--active qp-focusable" : " qp-focusable"), s.pos || "other");
-        tab.type = "button";
-        tab.setAttribute("aria-pressed", i === 0 ? "true" : "false");
-        tab.addEventListener("click", function () {
-          Array.prototype.forEach.call(senseRow.children, function (t) {
-            t.classList.remove("qp-sense--active");
-            t.setAttribute("aria-pressed", "false");
+    // silent guess. Each tab swaps the definition and the hero's pos line in
+    // place; nothing is re-fetched, every sense came back with the original
+    // lookup.
+    if (senses.length) {
+      var meaningHead = el("div", "qp-meaning-head");
+      meaningHead.appendChild(el("div", "qp-label qp-label--amber", "Meaning"));
+
+      if (senses.length > 1) {
+        var senseRow = el("div", "qp-senses");
+        senses.slice(0, MAX_SENSE_TABS).forEach(function (s, i) {
+          var tab = el("button", "qp-sense" + (i === 0 ? " qp-sense--active qp-focusable" : " qp-focusable"), s.pos || "other");
+          tab.type = "button";
+          tab.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+          tab.addEventListener("click", function () {
+            Array.prototype.forEach.call(senseRow.children, function (t) {
+              t.classList.remove("qp-sense--active");
+              t.setAttribute("aria-pressed", "false");
+            });
+            tab.classList.add("qp-sense--active");
+            tab.setAttribute("aria-pressed", "true");
+            meaning.textContent = s.definition;
+            posLine.textContent = s.pos || "";
           });
-          tab.classList.add("qp-sense--active");
-          tab.setAttribute("aria-pressed", "true");
-          defBox.textContent = s.definition;
-          posLine.textContent = s.pos || "";
+          senseRow.appendChild(tab);
         });
-        senseRow.appendChild(tab);
-      });
-      meaningLine.appendChild(senseRow);
-      meaningLine.appendChild(defBox);
-      body.appendChild(meaningLine);
-    } else if (senses.length === 1) {
-      body.appendChild(el("div", "qp-def", senses[0].definition));
+        meaningHead.appendChild(senseRow);
+      }
+      body.appendChild(meaningHead);
+
+      var meaning = el("div", "qp-meaning", senses[0].definition);
+      body.appendChild(meaning);
     }
 
     // audio
@@ -218,6 +210,7 @@
     var btn = el("button", "qp-play qp-focusable");
     btn.type = "button";
     var label = accentLabel(accent);
+    var btnText = "Play " + label;
     setIdle();
 
     var state = "idle";
@@ -226,24 +219,24 @@
     function setIdle() {
       btn.disabled = false;
       btn.className = "qp-play qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + label + "</span>";
+      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
       btn.removeAttribute("title");
       btn.setAttribute("aria-label", "Play " + label + " pronunciation of " + word);
     }
     function setLoading() {
       btn.disabled = true;
       btn.className = "qp-play qp-focusable";
-      btn.innerHTML = '<span class="qp-play__spin"></span><span>' + label + "</span>";
+      btn.innerHTML = '<span class="qp-play__spin"></span><span>' + btnText + "</span>";
     }
     function setPlaying() {
       btn.disabled = false;
       btn.className = "qp-play qp-play--playing qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + label + "</span>";
+      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
     }
     function setError(msg) {
       btn.disabled = false;
       btn.className = "qp-play qp-play--error qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + label + "</span>";
+      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
       btn.title = msg || "Could not play audio";
     }
     function done() {

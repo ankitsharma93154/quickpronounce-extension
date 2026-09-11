@@ -232,7 +232,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await page.waitForFunction(
         () => {
           const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-          return sr.querySelector(".qp-ipa") && sr.querySelectorAll(".qp-play").length === 2;
+          return sr.querySelector(".qp-pron-row__ipa") && sr.querySelectorAll(".qp-play").length === 2;
         },
         { timeout: 12000 }
       );
@@ -243,7 +243,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       throw new Error("result card never rendered. card text: " + JSON.stringify(html).slice(0, 200));
     }
     const word = await page.evaluate(
-      () => document.getElementById("qp-quickpronounce-host").shadowRoot.querySelector(".qp-word").textContent
+      () => document.getElementById("qp-quickpronounce-host").shadowRoot.querySelector(".qp-hero__word").textContent
     );
     if (word !== "accommodation") throw new Error("card word=" + word);
   });
@@ -279,7 +279,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     );
     const before = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-      return { pos: sr.querySelector(".qp-pos").textContent, def: sr.querySelector(".qp-def").textContent };
+      return { pos: sr.querySelector(".qp-hero__pos").textContent, def: sr.querySelector(".qp-meaning").textContent };
     });
     await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
@@ -288,7 +288,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     });
     const after = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-      return { pos: sr.querySelector(".qp-pos").textContent, def: sr.querySelector(".qp-def").textContent };
+      return { pos: sr.querySelector(".qp-hero__pos").textContent, def: sr.querySelector(".qp-meaning").textContent };
     });
     if (before.def === after.def) throw new Error(`definition did not change: "${before.def}"`);
     return `${before.pos} "${before.def.slice(0, 30)}..." -> ${after.pos} "${after.def.slice(0, 30)}..."`;
@@ -340,7 +340,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await pop.keyboard.press("Enter");
     try {
       await pop.waitForFunction(
-        () => document.querySelector("#pp-result .qp-card") && document.querySelector("#pp-result .qp-ipa"),
+        () => document.querySelector("#pp-result .qp-card") && document.querySelector("#pp-result .qp-pron-row__ipa"),
         { timeout: 12000 }
       );
     } catch (e) {
