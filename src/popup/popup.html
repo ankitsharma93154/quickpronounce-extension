@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuickPronounce</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="pp">
+      <header class="pp-head">
+        <div class="pp-brand">
+          <img class="pp-mark" src="../../icons/icon128.png" alt="" aria-hidden="true" width="24" height="24" />
+          <span class="pp-name">QuickPronounce</span>
+        </div>
+        <button id="pp-settings" class="pp-icon-btn" type="button" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.62.74 1.06 1.4 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </header>
+
+      <form id="pp-form" class="pp-search" autocomplete="off">
+        <input
+          id="pp-input"
+          class="pp-input"
+          type="text"
+          placeholder="Search pronunciation..."
+          aria-label="Search pronunciation"
+          spellcheck="false"
+        />
+        <button class="pp-go" type="submit" aria-label="Look up">Go</button>
+      </form>
+
+      <div id="pp-result" class="pp-result" hidden></div>
+
+      <section class="pp-recents">
+        <div class="pp-recents-head">
+          <span class="pp-recents-title">Recent</span>
+          <span id="pp-usage" class="pp-usage"></span>
+        </div>
+        <ul id="pp-recents-list" class="pp-recents-list"></ul>
+        <p id="pp-recents-empty" class="pp-empty">Look up a word to see it here.</p>
+      </section>
+
+      <footer class="pp-foot">
+        <a id="pp-site" class="pp-foot-link" href="https://www.quickpronounce.site" target="_blank" rel="noopener">quickpronounce.site</a>
+        <span class="pp-foot-dim">Free · MVP</span>
+      </footer>
+    </div>
+
+    <script src="../core/globals.js"></script>
+    <script src="../core/util.js"></script>
+    <script src="../core/config.js"></script>
+    <script src="../core/respell.js"></script>
+    <script src="../core/normalize.js"></script>
+    <script src="../core/audioCache.js"></script>
+    <script src="../core/store.js"></script>
+    <script src="../core/analytics.js"></script>
+    <script src="../content/card.css.js"></script>
+    <script src="../content/card.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

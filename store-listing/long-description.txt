@@ -1,0 +1,30 @@
+QuickPronounce puts a pronunciation lookup one click away, on any page you read.
+
+Select a word and a small card shows you:
+- IPA transcription (US and UK)
+- a plain-English respelling, like "pruh-NUN-see-AY-shun"
+- the syllable breakdown with stress marked
+- US and UK pronunciation audio
+- a short definition
+- a link to the full entry on quickpronounce.site
+
+THREE WAYS TO USE IT
+- Select a word, then click the "Pronounce" button that appears.
+- Right-click a selection and choose "Pronounce with QuickPronounce".
+- Set a keyboard shortcut and pronounce the current selection instantly.
+
+The toolbar popup lets you type a word to look up directly, see your last
+10 lookups, and check how many lookups you have left today.
+
+PRIVACY
+QuickPronounce only ever sends the single word you explicitly ask about.
+It does not read page content, does not track the pages you visit, does not
+build a browsing history, and includes no third-party analytics or tracking
+scripts. Your recent words and settings are stored locally in your browser.
+
+FREE
+This is a free MVP. Up to 40 new words per day; words you have already looked
+up keep working. Audio is generated on demand and cached so replaying a word
+is instant.
+
+Made by QuickPronounce (quickpronounce.site).
