@@ -42,7 +42,10 @@
 
     // --- QuickPronounce site links --------------------------------------
     SITE_URL: "https://www.quickpronounce.site",
-    PRIVACY_URL: "https://www.quickpronounce.site/privacy-policy",
+    // The extension's own policy, not the website's - different data
+    // practices (see Pronounce_web/src/pages/ExtensionPrivacyPolicy.js).
+    // Only resolves once that page is deployed.
+    PRIVACY_URL: "https://www.quickpronounce.site/extension-privacy-policy",
     // The site auto-runs a lookup for /?word=<word> (see Pronounce_web Home.js).
     wordUrl: function (word) {
       return "https://www.quickpronounce.site/?word=" + encodeURIComponent(word);
