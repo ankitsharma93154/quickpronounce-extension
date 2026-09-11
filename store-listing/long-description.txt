@@ -1,6 +1,6 @@
-QuickPronounce puts a pronunciation lookup one click away, on any page you read.
+Pronounce any word while you read.
 
-Select a word and a small card shows you:
+Select a word on any page and a small card shows you:
 - IPA transcription (US and UK)
 - a plain-English respelling, like "pruh-NUN-see-AY-shun"
 - the syllable breakdown with stress marked
