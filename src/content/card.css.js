@@ -175,13 +175,13 @@
     /* ---- audio buttons: model on .cta-button ---- */
     ".qp-audio { display:flex; gap:8px; margin-top:10px; }",
     ".qp-play {",
-    "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:6px;",
-    "  min-height:36px; padding:7px 10px; font-size:13px; font-weight:700; cursor:pointer;",
+    "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:7px;",
+    "  min-height:43px; padding:9px 12px; font-size:14px; font-weight:700; cursor:pointer;",
     "  border:1px solid var(--border-primary-soft); border-radius:var(--radius-md);",
-    "  background:var(--tint-purple); color:var(--primary);",
+    "  background:var(--border-primary-soft); color:var(--primary);",
     "  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;",
     "}",
-    ".qp-play:hover { background:var(--border-primary-soft); transform:translateY(-1px); }",
+    ".qp-play:hover { background:rgba(var(--primary-rgb),0.22); transform:translateY(-1px); }",
     ".qp-play:disabled { opacity:0.6; cursor:default; transform:none; }",
     /* Compound selectors (.qp-play.qp-play--X), not bare .qp-play--X: a bare
        single class has the same specificity as .qp-play:hover above, and
@@ -198,7 +198,7 @@
     "}",
     ".qp-play.qp-play--error { border-color:var(--status-error); color:var(--status-error); background:transparent; }",
     ".qp-play.qp-play--error:hover { background:rgba(239,68,68,0.08); }",
-    ".qp-play__ico { width:14px; height:14px; flex:0 0 auto; }",
+    ".qp-play__ico { width:16px; height:16px; flex:0 0 auto; }",
     ".qp-play__spin {",
     "  width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;",
     "  border-radius:50%; animation:qp-spin 0.7s linear infinite;",

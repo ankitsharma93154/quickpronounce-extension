@@ -148,6 +148,12 @@
       body.appendChild(rLine);
     }
 
+    // audio - right under pronunciation/respelling, ahead of meaning
+    var audioRow = el("div", "qp-audio");
+    audioRow.appendChild(makePlayButton(m.word, "us", ctx));
+    audioRow.appendChild(makePlayButton(m.word, "uk", ctx));
+    body.appendChild(audioRow);
+
     // meaning: a part-of-speech switcher when the word has more than one, so
     // an ambiguous word (e.g. "record", "bank", "wind") is never just one
     // silent guess. Each tab swaps the definition and the hero's pos line in
@@ -182,12 +188,6 @@
       var meaning = el("div", "qp-meaning", senses[0].definition);
       body.appendChild(meaning);
     }
-
-    // audio
-    var audioRow = el("div", "qp-audio");
-    audioRow.appendChild(makePlayButton(m.word, "us", ctx));
-    audioRow.appendChild(makePlayButton(m.word, "uk", ctx));
-    body.appendChild(audioRow);
 
     card.appendChild(body);
 
