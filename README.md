@@ -27,51 +27,49 @@ Reload after code changes: the refresh icon on the card in `chrome://extensions`
 
 ---
 
-## API key
+## Auth: no API key, an install id instead
 
-Both API endpoints need an `X-API-Key` header. It lives in one place:
-[`src/core/config.js`](src/core/config.js) → `API_KEY`.
+The extension ships no credential at all. On first run it generates a random
+UUID (`crypto.randomUUID()`, see `store.js` `getInstallId`) and sends it as
+`X-Install-Id` on every request instead of `X-API-Key`. It identifies an
+install, not a person - no account, no email, nothing else attached to it.
 
-**Current value:** the shared `local-dev` key from
-`quickpronounce_api/config/api-keys.json` (`dailyLimit` 1000). Good enough for
-load-unpacked testing and the early MVP.
+The API (`quickpronounce_api/lib/installQuota.js`) uses that id to give each
+install its own daily quota, backed by Upstash Redis so it's enforced for
+real (survives cold starts, shared across concurrent Vercel instances) rather
+than being a client-side-only number anyone can clear. A request with no
+valid `X-Install-Id` - an old build, or someone hitting the routes directly -
+falls back to the API's existing coarser per-IP limit rather than being
+rejected outright.
 
-**Before any store submission:** swap it for a dedicated key.
-
-1. Add an entry to `quickpronounce_api/config/api-keys.json` (see
-   `config/api-keys.example.json`) named `quickpronounce-extension`, with a
-   **deliberately low `dailyLimit`**.
-2. Mirror the same `{ "keys": [...] }` JSON into the `API_KEYS_JSON` env var on
-   the host.
-3. Put that key in `config.js`.
-
-A published extension cannot hide this key: treat it as low-trust and
-rotatable. If it gets abused, change the string in `config.js` and ship an
-update.
-
-### API key hardening (post-MVP)
-
-The right fix is a thin **unauthenticated proxy** on the QuickPronounce side:
-an endpoint like `https://api.quickpronounce.site/ext/v1/...` that injects the
-real key server-side and rate-limits per IP. When that exists, point
-`API_BASE` at it and set `API_KEY` to `""` - no other code changes.
+This replaced an earlier design (a shared, baked-in API key) that had two
+real problems: it shipped a real credential in the client, and every install
+drew from one shared server-side budget, so a modest number of honest users
+could exhaust it for everyone at once with no way to tell who. The install-id
+design fixes both without adding accounts or login.
 
 ---
 
 ## How it talks to the API
 
-The brief referenced `/v1/dictionary/pronunciation`; that route does not exist.
-The real surface (`quickpronounce_api/openapi.yaml`) is two endpoints, and the
-extension uses both:
+The brief referenced `/v1/dictionary/pronunciation`; that route does not
+exist. The real surface is two endpoints under `/ext/v1` - the extension's
+own backend, same data and response shape as the public `/v1` API
+(`quickpronounce_api/openapi.yaml`) but gated by install id instead of an API
+key, and intentionally not part of the documented public surface:
 
 | When | Call | Used for |
 |---|---|---|
-| On every lookup | `GET /v1/dictionary/:word` | definition, IPA, syllables - fills the card immediately |
-| On pressing play | `GET /v1/pronunciation/:word?accent=us\|uk` | one base64 MP3 for that accent, fetched lazily and cached |
+| On every lookup | `GET /ext/v1/dictionary/:word` | definition, IPA, syllables - fills the card immediately |
+| On pressing play | `GET /ext/v1/pronunciation/:word?accent=us\|uk` | one base64 MP3 for that accent, fetched lazily and cached |
 
 Audio is never fetched until you press a play button, and each clip is fetched
 at most once per session (the API docs ask callers to cache aggressively
 because it synthesizes real WaveNet audio).
+
+**Requires a deploy of `quickpronounce_api`** with the `/ext/v1/*` routes and
+`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` set before this works
+against production - see that repo's changes.
 
 ---
 
@@ -82,11 +80,11 @@ manifest.json                 MV3. Permissions: contextMenus, storage, scripting
                               Host permission: api.quickpronounce.site only.
 src/core/                     Shared modules, all classic scripts on a single `self.QP` object
   globals.js                  namespace bootstrap (loaded first everywhere)
-  config.js                   THE place endpoints, the API key, limits, and URLs live
+  config.js                   THE place endpoints, limits, and URLs live
   util.js                     debounce, base64->bytes, small helpers
   normalize.js                selection text -> one clean word
   respell.js                  syllables + stress -> "pruh-NUN-see-AY-shun"
-  store.js                    chrome.storage.local wrapper (settings, recents, cap, analytics)
+  store.js                    chrome.storage.local wrapper (settings, recents, cap, analytics, install id)
   cap.js                      rolling-24h "unique new words" ledger
   analytics.js                LOCAL-ONLY event ring buffer, behind an interface
   offlineData.js              ~20 commonly-mispronounced words, bundled
@@ -120,6 +118,8 @@ pulls the same files in via `importScripts`; the popup/options pages via
 ```
 node scripts/generate-icons.js   # (re)write icons/icon*.png from icons/source-logo.png
 node scripts/check.js            # node --check every .js + manifest sanity
+node scripts/selftest.js         # normalize / respell / cap logic, no browser needed
+node scripts/e2e.js              # loads the extension in Chromium, drives it against the real API
 node scripts/package.js          # dist/quickpronounce-extension-<version>.zip for the stores
 ```
 
@@ -138,8 +138,6 @@ node scripts/package.js          # dist/quickpronounce-extension-<version>.zip f
 
 ## Known limitations (MVP)
 
-- **API key ships in the client.** Low-trust and rotatable by design; the proxy
-  is the fix (above).
 - **Single words only.** A multi-word selection uses the first word and the
   card shows a "first word only" chip. No phrase or sentence pronunciation.
 - **The featured transcription follows the accent setting.** Both US and UK

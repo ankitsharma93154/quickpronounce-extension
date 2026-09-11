@@ -1,8 +1,13 @@
 # Manual test checklist
 
-Do this after **Load unpacked** and after setting a real `API_KEY` in
-`src/core/config.js`. Without a key every lookup shows "Couldn't authorize
-this lookup." (that itself is worth confirming once).
+Do this after **Load unpacked**. No API key to set up - the extension
+generates its own install id on first run (see README "Auth: no API key, an
+install id instead"). This does require `quickpronounce_api`'s `/ext/v1/*`
+routes to be deployed and its `UPSTASH_REDIS_REST_URL` /
+`UPSTASH_REDIS_REST_TOKEN` set; until then every lookup 404s from the
+catch-all route and shows the "couldn't find a full entry" state, which is
+misleading in this one specific case - it means the routes aren't live yet,
+not that the word is missing.
 
 Automated first:
 
@@ -18,8 +23,8 @@ node scripts/e2e.js        # loads the extension in Chromium, drives the real
 API, normalize, not-found, session cache, the daily cap (blocks new words at
 40, still serves known ones), recents, the on-page selection pill + Shadow DOM
 card, the popup search + recents + usage line, the options page, and the
-privacy property (only `GET /v1/dictionary|pronunciation/<word>` leaves, no
-page content). It does NOT judge: visual polish, real audio playback quality,
+privacy property (only `GET /ext/v1/dictionary|pronunciation/<word>` leaves,
+no page content). It does NOT judge: visual polish, real audio playback quality,
 how the card looks on specific dark sites, or selector robustness across many
 real sites. Do those by hand below.
 
@@ -79,7 +84,8 @@ real sites. Do those by hand below.
 18. Open DevTools -> Network -> offline (or block `api.quickpronounce.site`).
     Look up `schedule` -> comes back with an **offline copy** chip (bundled).
     Look up `serendipity` -> "Couldn't reach QuickPronounce" with **Try again**.
-19. Temporarily break `API_KEY` -> "Couldn't authorize this lookup."
+19. Temporarily point `API_BASE` (in `config.js`) at a host that returns a
+    500 (or stop the API) -> a clear error state, never a stuck spinner.
 20. Look up a nonsense string like `asdfghjk` -> "We couldn't find a full
     entry for this word." with a QuickPronounce link.
 
@@ -105,5 +111,6 @@ real sites. Do those by hand below.
 ## Privacy sanity
 
 26. DevTools -> Network, filter to `quickpronounce`. Confirm the only
-    outgoing requests are `GET /v1/dictionary/<word>` and (on play)
-    `GET /v1/pronunciation/<word>` - one word each, no page URL, no page text.
+    outgoing requests are `GET /ext/v1/dictionary/<word>` and (on play)
+    `GET /ext/v1/pronunciation/<word>` - one word each, no page URL, no page
+    text. Headers carry `X-Install-Id`, never anything resembling a key.

@@ -168,6 +168,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ---- browser-wide network capture (SW fetches don't show on page) ---
   const netUrls = [];
+  const netReqs = []; // { url, headers }
   const cdp = await browser.target().createCDPSession();
   await cdp.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
   browser.on("targetcreated", async (t) => {
@@ -175,7 +176,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const s = await t.createCDPSession();
       await s.send("Network.enable");
       s.on("Network.requestWillBeSent", (e) => {
-        if (e.request.url.includes(API)) netUrls.push(e.request.method + " " + e.request.url);
+        if (e.request.url.includes(API)) {
+          netUrls.push(e.request.method + " " + e.request.url);
+          netReqs.push({ url: e.request.url, headers: e.request.headers });
+        }
       });
     } catch (_) {}
   });
@@ -185,7 +189,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const swSession = await swTarget.createCDPSession();
   await swSession.send("Network.enable");
   swSession.on("Network.requestWillBeSent", (e) => {
-    if (e.request.url.includes(API)) netUrls.push(e.request.method + " " + e.request.url);
+    if (e.request.url.includes(API)) {
+      netUrls.push(e.request.method + " " + e.request.url);
+      netReqs.push({ url: e.request.url, headers: e.request.headers });
+    }
   });
   await page.goto("https://example.com/", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
@@ -287,13 +294,28 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return `${before.pos} "${before.def.slice(0, 30)}..." -> ${after.pos} "${after.def.slice(0, 30)}..."`;
   });
 
-  await test("privacy: only /v1/dictionary|pronunciation/<word> hit the API, nothing else", async () => {
+  await test("privacy: only /ext/v1/dictionary|pronunciation/<word> hit the API, nothing else", async () => {
     if (netUrls.length === 0) throw new Error("no API calls captured");
-    const bad = netUrls.filter((u) => !/\/v1\/(dictionary|pronunciation)\/[^/?]+/.test(u));
+    const bad = netUrls.filter((u) => !/\/ext\/v1\/(dictionary|pronunciation)\/[^/?]+$|\/ext\/v1\/(dictionary|pronunciation)\/[^/?]+\?/.test(u));
     if (bad.length) throw new Error("unexpected: " + bad.join(", "));
     const leak = netUrls.filter((u) => /example\.com|<p|innerHTML/.test(u));
     if (leak.length) throw new Error("page content in URL: " + leak.join(", "));
     return netUrls.map((u) => u.split(API)[1]).join(" , ");
+  });
+
+  await test("auth: every request carries a UUID X-Install-Id, never an API key", async () => {
+    if (netReqs.length === 0) throw new Error("no API requests captured");
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const bad = netReqs.filter((r) => {
+      const h = r.headers || {};
+      const installId = h["X-Install-Id"] || h["x-install-id"];
+      const apiKey = h["X-API-Key"] || h["x-api-key"];
+      return apiKey || !installId || !uuidRe.test(installId);
+    });
+    if (bad.length) throw new Error(JSON.stringify(bad.map((r) => ({ url: r.url, headers: r.headers })).slice(0, 2)));
+    const ids = new Set(netReqs.map((r) => (r.headers["X-Install-Id"] || r.headers["x-install-id"] || "").toLowerCase()));
+    if (ids.size !== 1) throw new Error("install id was not stable across requests: " + [...ids].join(", "));
+    return "install id: " + [...ids][0];
   });
 
   await test("Esc dismisses the card", async () => {

@@ -1,6 +1,6 @@
 # QuickPronounce extension - Privacy policy
 
-_Last updated: 2026-09-10_
+_Last updated: 2026-09-11_
 
 The QuickPronounce browser extension is built to do one job with the least
 possible access to your data.
@@ -32,6 +32,7 @@ Stored locally in your browser only (`chrome.storage.local`), never uploaded:
 - your settings (accent preference, whether the selection button is shown),
 - your last 10 looked-up words and their pronunciation data,
 - a local count of how many new words you have looked up in the last 24 hours,
+- a randomly generated install id (see below),
 - a small local diagnostics counter (e.g. "lookups: 12") with no word text and
   no identifiers, used only to understand feature usage during testing. You can
   clear it any time from the extension's settings page.
@@ -40,9 +41,12 @@ Clearing the extension's data, or removing the extension, deletes all of this.
 
 ## The API request
 
-Requests to the QuickPronounce API include a shared extension access key so the
-service can apply fair-use limits. The key is not tied to you and is the same
-for every install.
+Every request to the QuickPronounce API includes a random install id: a UUID
+generated once, on your device, the first time you use the extension. It is
+sent so the service can give your install its own fair daily limit instead of
+every install sharing one budget. It identifies an install, not you - it is
+not tied to your name, email, account, or any other identifier, and no other
+device or browser profile shares it.
 
 ## Permissions and why
 

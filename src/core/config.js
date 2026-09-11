@@ -4,24 +4,17 @@
  * URL. Change the API surface in one place.
  *
  * ---------------------------------------------------------------------------
- * API KEY NOTE  (read before shipping)
+ * AUTH NOTE
  * ---------------------------------------------------------------------------
- * A published browser extension cannot hold a secret. Anything in this file is
- * trivially extractable from the packed .crx. `API_KEY` below is therefore a
- * LOW-TRUST, ROTATABLE key, not a credential.
- *
- * CURRENT VALUE: the shared "local-dev" key from quickpronounce_api/config/
- * api-keys.json (dailyLimit 1000). Fine for load-unpacked testing and the
- * early MVP. BEFORE any Chrome Web Store / Edge submission, swap it for a
- * dedicated "quickpronounce-extension" key with a deliberately low dailyLimit
- * (add it to config/api-keys.json and the API_KEYS_JSON env var). If a key
- * gets abused, change the string here and ship an extension update - nothing
- * else depends on its value.
- *
- * The real hardening step (see README "API key hardening") is a thin
- * unauthenticated proxy on the QuickPronounce side that injects the true key
- * server-side and rate-limits per IP. When that exists, point API_BASE at the
- * proxy and set API_KEY to "".
+ * The extension holds no API key and no credential of any kind. A published
+ * extension can't keep a secret - anything shipped here is extractable from
+ * the packed .crx - so instead of an API key, api.js sends a random install
+ * id (see store.js getInstallId, generated once per install with
+ * crypto.randomUUID) as X-Install-Id. The API uses it to give each install
+ * its own fair daily quota (server-side, backed by Redis - see
+ * quickpronounce_api/lib/installQuota.js) instead of every install sharing
+ * one bucket. It identifies an install, not a person: no account, no email,
+ * nothing else attached to it.
  */
 (function () {
   var QP = (self.QP = self.QP || {});
@@ -29,16 +22,18 @@
   QP.config = {
     // --- API ---------------------------------------------------------------
     API_BASE: "https://api.quickpronounce.site",
-    API_KEY: "qp_live_bcd108b156c5bd7a3b642b4887432aacc94e55f0cd598713cc8c96ae660bab21",
 
-    // GET /v1/dictionary/:word  -> definitions + phonetics + syllables (no audio)
+    // GET /ext/v1/dictionary/:word  -> definitions + phonetics + syllables (no audio)
+    // The /ext/v1/* routes are the extension's own backend: same data and
+    // response shape as the public /v1/* API, gated by X-Install-Id instead
+    // of X-API-Key so nothing here needs a shipped credential.
     dictionaryPath: function (word) {
-      return "/v1/dictionary/" + encodeURIComponent(word);
+      return "/ext/v1/dictionary/" + encodeURIComponent(word);
     },
-    // GET /v1/pronunciation/:word?accent=us|uk -> phonetics + syllables + one base64 mp3
+    // GET /ext/v1/pronunciation/:word?accent=us|uk -> phonetics + syllables + one base64 mp3
     pronunciationPath: function (word, accent) {
       return (
-        "/v1/pronunciation/" +
+        "/ext/v1/pronunciation/" +
         encodeURIComponent(word) +
         "?accent=" +
         encodeURIComponent(accent === "uk" ? "uk" : "us")

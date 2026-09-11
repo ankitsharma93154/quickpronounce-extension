@@ -9,6 +9,9 @@
  *   capLedger        { <word>: firstLookupTs }  (rolling window, pruned on read)
  *   analyticsBuffer  [{ event, props, ts }]     (local only, ring buffer)
  *   installMeta      { installedAt, firstLookupDone }
+ *   installId        random UUID, generated once, sent as X-Install-Id so the
+ *                    API can give this install its own fair daily quota
+ *                    without an account or a shipped credential (api.js)
  */
 (function () {
   var QP = (self.QP = self.QP || {});
@@ -18,7 +21,8 @@
     RECENTS: "recents",
     CAP: "capLedger",
     ANALYTICS: "analyticsBuffer",
-    META: "installMeta"
+    META: "installMeta",
+    INSTALL_ID: "installId"
   };
 
   var DEFAULT_SETTINGS = { selectionButton: true, accent: "us" };
@@ -124,6 +128,19 @@
     return next;
   }
 
+  // Not a secret, not tied to any account — just a random label so the API
+  // can meter this install's usage fairly instead of every install sharing
+  // one budget. Generated once and reused for the life of the install.
+  async function getInstallId() {
+    var existing = await get(KEYS.INSTALL_ID);
+    if (typeof existing === "string" && existing) return existing;
+    var id = crypto.randomUUID();
+    var obj = {};
+    obj[KEYS.INSTALL_ID] = id;
+    await set(obj);
+    return id;
+  }
+
   QP.store = {
     KEYS: KEYS,
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
@@ -137,6 +154,7 @@
     getAnalyticsBuffer: getAnalyticsBuffer,
     setAnalyticsBuffer: setAnalyticsBuffer,
     getMeta: getMeta,
-    setMeta: setMeta
+    setMeta: setMeta,
+    getInstallId: getInstallId
   };
 })();

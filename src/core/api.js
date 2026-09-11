@@ -4,17 +4,20 @@
  *
  * Two real endpoints (see quickpronounce_api/openapi.yaml):
  *
- *   GET /v1/dictionary/:word
+ *   GET /ext/v1/dictionary/:word
  *     -> { word, entries[].definitions, phonetics:{us,uk}, syllables:{us,uk} }
  *        No audio. This fills the card.
  *
- *   GET /v1/pronunciation/:word?accent=us|uk
+ *   GET /ext/v1/pronunciation/:word?accent=us|uk
  *     -> { word, phonetics, syllables, audio:{ content:<base64>, format } }
  *        One synthesized MP3 for the requested accent. Fetched lazily, only
  *        when the user presses a play button.
  *
- * Both require the `X-API-Key` header. Errors are normalized to an ApiError
- * with a stable `.kind` so the UI can pick copy without parsing messages.
+ * Both take an `X-Install-Id` header (see store.js getInstallId) instead of
+ * an API key - it identifies the install for a fair per-install quota, not a
+ * credential, so there's nothing here worth protecting as a secret. Errors
+ * are normalized to an ApiError with a stable `.kind` so the UI can pick
+ * copy without parsing messages.
  */
 (function () {
   var QP = (self.QP = self.QP || {});
@@ -30,8 +33,19 @@
   ApiError.prototype = Object.create(Error.prototype);
   ApiError.prototype.constructor = ApiError;
 
-  function request(path) {
+  // Resolved once per service-worker lifetime and reused: memoizing the
+  // promise (not just the value) means two requests firing before the very
+  // first one resolves still share one chrome.storage read/write instead of
+  // racing to generate two different install ids.
+  var installIdPromise = null;
+  function getInstallId() {
+    if (!installIdPromise) installIdPromise = QP.store.getInstallId();
+    return installIdPromise;
+  }
+
+  async function request(path) {
     var cfg = QP.config;
+    var installId = await getInstallId();
     var controller = new AbortController();
     var timer = setTimeout(function () {
       controller.abort();
@@ -39,7 +53,7 @@
 
     return fetch(cfg.API_BASE + path, {
       method: "GET",
-      headers: { "X-API-Key": cfg.API_KEY, Accept: "application/json" },
+      headers: { "X-Install-Id": installId, Accept: "application/json" },
       signal: controller.signal,
       cache: "no-store"
     })
