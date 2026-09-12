@@ -62,7 +62,7 @@ function load(rel) {
   vm.runInContext(code, sandbox, { filename: rel });
 }
 
-["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js"].forEach(load);
+["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js"].forEach(load);
 
 const QP = sandbox.QP;
 
@@ -131,6 +131,86 @@ const QP = sandbox.QP;
   const snap = await QP.cap.snapshot();
   eq("snapshot used", snap.used, 3);
   ok("snapshot resetsAt in the future", typeof snap.resetsAt === "number" && snap.resetsAt > Date.now());
+
+  console.log("pickSenses (duplicate-POS entry selection):");
+  {
+    // real shape from the dataset: "sir" has three separate Noun entries -
+    // the first is an unrelated initialism, so it must be skipped in favor
+    // of the real "titular prefix" sense further down the list.
+    const entries = [
+      { partOfSpeech: "Noun", definitions: ["Initialism of surface insulation resistance."] },
+      { partOfSpeech: "Name", definitions: ["Initialism of Special Intensive Revision, a voter-roll revision process in India."] },
+      { partOfSpeech: "Adjective", definitions: ["Initialism of susceptible-infected/infectious-removed/recovered."] },
+      { partOfSpeech: "Noun", definitions: ["The titular prefix given to a knight or baronet."] },
+      { partOfSpeech: "Name", definitions: ["Alternative form of Syr."] },
+      { partOfSpeech: "Noun", definitions: ["A man of a higher rank or position."] },
+      { partOfSpeech: "Verb", definitions: ["To address another individual using \"sir\"."] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    const noun = senses.find((s) => s.pos === "Noun");
+    ok("sir: Noun sense skips the initialism entry", noun && noun.definition === "The titular prefix given to a knight or baronet.");
+    ok("sir: primary Noun sense still leads", senses[0].pos === "Noun");
+  }
+  {
+    // "ad": first Noun entry is an initialism, a later Noun entry is the
+    // real meaning - same shape, different word, confirms it's not a
+    // one-off fix for "sir" specifically.
+    const entries = [
+      { partOfSpeech: "Noun", definitions: ["Initialism of assistant director."] },
+      { partOfSpeech: "Adverb", definitions: ["Initialism of Anno Domini (borrowed from Latin); in the year of our Lord."] },
+      { partOfSpeech: "Adjective", definitions: ["Initialism of antidumping."] },
+      { partOfSpeech: "Name", definitions: ["Initialism of Abu Dhabi."] },
+      { partOfSpeech: "Noun", definitions: ["Advantage; also, designating the left-hand side, from the player's point of view."] },
+      { partOfSpeech: "Preposition", definitions: ["to, toward"] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    const noun = senses.find((s) => s.pos === "Noun");
+    eq("ad: Noun sense skips the initialism entry", noun.definition, "Advantage; also, designating the left-hand side, from the player's point of view.");
+  }
+  {
+    // "app": the alt-form-of signal, not initialism - a different family of
+    // the same underlying problem.
+    const entries = [
+      { partOfSpeech: "Noun", definitions: ["Alternative form of app."] },
+      { partOfSpeech: "Name", definitions: ["A surname from German."] },
+      { partOfSpeech: "Noun", definitions: ["An application (program), especially a small one designed for a mobile device."] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    const noun = senses.find((s) => s.pos === "Noun");
+    eq("app: Noun sense skips the alt-form entry", noun.definition, "An application (program), especially a small one designed for a mobile device.");
+  }
+  {
+    // "aaa"-shaped: every entry sharing the POS is non-primary - there is no
+    // better option, so the first one must be kept rather than discarded.
+    const entries = [
+      { partOfSpeech: "Noun", definitions: ["Initialism of abdominal aortic aneurysm."] },
+      { partOfSpeech: "Noun", definitions: ["Initialism of abdominal aortic aneurysm; a second listing."] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    eq("aaa: no better option -> first entry kept", senses[0].definition, "Initialism of abdominal aortic aneurysm.");
+  }
+  {
+    // control: duplicate POS where the first entry is already a plain,
+    // ordinary sense - must NOT be swapped for a later one just because a
+    // later one exists (first-wins is correct here, e.g. "bank" - financial
+    // institution vs. riverbank, both legitimate, neither should be demoted).
+    const entries = [
+      { partOfSpeech: "Noun", definitions: ["A financial institution."] },
+      { partOfSpeech: "Name", definitions: ["A surname."] },
+      { partOfSpeech: "Noun", definitions: ["The edge of a river or lake."] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    const noun = senses.find((s) => s.pos === "Noun");
+    eq("bank-like: first legitimate Noun sense is left alone", noun.definition, "A financial institution.");
+  }
+  {
+    // control: ordinary word, one entry per POS, no duplicates at all -
+    // completely unaffected by this change.
+    const entries = [{ partOfSpeech: "Noun", definitions: ["The formal or informal way in which a word is made to sound when spoken."] }];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    eq("single-entry word unchanged", senses.length, 1);
+    eq("single-entry word: definition intact", senses[0].definition, "The formal or informal way in which a word is made to sound when spoken.");
+  }
 
   console.log("\n" + (failed ? failed + " FAILED, " : "") + passed + " passed");
   process.exit(failed ? 1 : 0);

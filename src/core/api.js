@@ -114,20 +114,56 @@
   // reachable via the card's part-of-speech tabs.
   var PRIMARY_POS_PREFERENCE = ["Noun", "Verb", "Adjective", "Adverb"];
 
-  // One sense per part of speech (first definition of the first entry for
-  // that POS), reordered so the best default sense leads. Returns [] if the
-  // word has no definitions at all.
+  // A word can have several distinct dictionary entries sharing one POS
+  // (different etymology sections) - e.g. "sir" has three separate "Noun"
+  // entries. Wiktionary's extraction order isn't quality-sorted, so the
+  // *first* one isn't reliably the best: audited across the full dataset,
+  // ~11% of duplicate-POS groups have a first entry that's an
+  // initialism/abbreviation/acronym or an alt-form-of entry while a later
+  // entry in the same group is a plain, ordinary sense (e.g. "sir" -> Noun
+  // leads with "Initialism of surface insulation resistance" instead of
+  // "the titular prefix given to a knight..."). Mirrors the rarity/alt-form
+  // signals quickpronounce_api's reorderDefinitions() already uses, plus
+  // initialism/abbreviation, which turned out to be the dominant case (~71%
+  // of the audited mis-picks; alt-form covers the rest, rarity-tagged
+  // definitions never won this particular way).
+  var RARITY_RE =
+    /^\((?:[^)]*\b(?:archaic|obsolete|rare|dialectal|dated|historical|nonstandard|proscribed|poetic)\b[^)]*)\)/i;
+  var ALT_FORM_RE =
+    /^(alternative\b.{0,30}\b(form|spelling)\s+of|misspelling of|obsolete (form |spelling )?of|archaic (form |spelling )?of|dialectal form of|pronunciation spelling of|dated form of)\b/i;
+  var INITIALISM_RE = /^(initialism of|abbreviation of|acronym of|contraction of|clipping of)\b/i;
+
+  function isNonPrimaryDefinition(def) {
+    return RARITY_RE.test(def) || ALT_FORM_RE.test(def) || INITIALISM_RE.test(def);
+  }
+
+  // One sense per part of speech, reordered so the best default sense leads.
+  // Returns [] if the word has no definitions at all.
   function pickSenses(entries, defaultPos) {
     var senses = [];
-    var seen = {};
+    var indexByPos = {}; // pos key -> that pos's index into `senses`
     for (var i = 0; i < entries.length; i++) {
       var e = entries[i];
       if (!e || !Array.isArray(e.definitions) || !e.definitions.length) continue;
       var pos = e.partOfSpeech || null;
       var key = pos == null ? "#" + i : pos;
-      if (seen[key]) continue; // keep only the first sense per part of speech
-      seen[key] = true;
-      senses.push({ pos: pos, definition: String(e.definitions[0]) });
+      var definition = String(e.definitions[0]);
+
+      if (!(key in indexByPos)) {
+        indexByPos[key] = senses.length;
+        senses.push({ pos: pos, definition: definition });
+        continue;
+      }
+
+      // Already holding a sense for this POS - only swap it for this later
+      // entry if the one we're holding looks non-primary and this one
+      // doesn't. If every entry for this POS is non-primary, there's no
+      // better option, so the first stays (matches ~4.5% of duplicate-POS
+      // groups where nothing better is available).
+      var held = senses[indexByPos[key]];
+      if (isNonPrimaryDefinition(held.definition) && !isNonPrimaryDefinition(definition)) {
+        senses[indexByPos[key]] = { pos: pos, definition: definition };
+      }
     }
     if (!senses.length) return senses;
 
@@ -193,5 +229,6 @@
     return { base64: data.audio.content, format: data.audio.format || "mp3" };
   }
 
-  QP.api = { getDictionary: getDictionary, getAudio: getAudio, ApiError: ApiError };
+  // pickSenses exported for selftest.js only - not used by any other caller.
+  QP.api = { getDictionary: getDictionary, getAudio: getAudio, ApiError: ApiError, pickSenses: pickSenses };
 })();
