@@ -46,6 +46,12 @@
     while (root.firstChild) root.removeChild(root.firstChild);
   }
 
+  // The popup (ctx.compact) stays as tight as it is today so Recent stays in
+  // view without scrolling; the on-page card gets the roomier variant.
+  function cardClass(ctx) {
+    return ctx.compact ? "qp-card" : "qp-card qp-card--roomy";
+  }
+
   function accentLabel(a) {
     return a === "uk" ? "UK" : "US";
   }
@@ -59,8 +65,8 @@
 
   // --- state renderers ----------------------------------------------------
 
-  function renderLoading(root, view) {
-    var card = el("div", "qp-card");
+  function renderLoading(root, view, ctx) {
+    var card = el("div", cardClass(ctx));
     card.appendChild(el("div", "qp-card__bar"));
     var body = el("div", "qp-card__body");
     var head = el("div", "qp-card__head");
@@ -76,7 +82,7 @@
   function renderOk(root, view, ctx) {
     var m = view.model;
     var accent = ctx.accent === "uk" ? "uk" : "us";
-    var card = el("div", "qp-card");
+    var card = el("div", cardClass(ctx));
 
     // Every distinct part of speech the word has, primary sense first (see
     // pickSenses in api.js). Falls back to the single definition/partOfSpeech
@@ -142,14 +148,32 @@
       body.appendChild(pron);
     }
 
-    // respelling + syllable count, one line, follows the accent preference -
-    // the respelling string already encodes stress (the stressed syllable is
-    // UPPERCASE), so there is no need for a separate coloured breakdown too.
-    var respell = m.respell && (accent === "uk" ? m.respell.uk : m.respell.us);
+    // respelling + syllable count, one line, follows the accent preference.
+    // Each syllable is its own span, colour/weight-coded by stress (mirrors
+    // Pronounce_web's phoneticSection.js) instead of the old caps-as-stress
+    // convention, which had no way for a reader to discover what it meant.
+    // The plain joined string (still computed server-side) becomes the
+    // aria-label, so assistive tech gets a readable fallback instead of
+    // walking the individual coloured spans.
+    var syllables = m.syllables && (accent === "uk" ? m.syllables.uk : m.syllables.us);
+    var validSyllables = (syllables || []).filter(function (s) {
+      return s && String(s.text || "").trim();
+    });
+    var respellText = m.respell && (accent === "uk" ? m.respell.uk : m.respell.us);
     var sylCount = m.syllableCount && (accent === "uk" ? m.syllableCount.uk : m.syllableCount.us);
-    if (respell) {
+    if (validSyllables.length) {
       var rLine = el("div", "qp-respell-line");
-      rLine.appendChild(el("b", null, respell));
+      if (respellText) rLine.setAttribute("aria-label", respellText);
+      var sylWrap = el("span", "qp-syllables");
+      sylWrap.setAttribute("aria-hidden", "true");
+      validSyllables.forEach(function (s, i) {
+        var stress = s.stress === 1 ? 1 : s.stress === 2 ? 2 : 0;
+        var syl = el("span", "qp-syl qp-syl--" + stress, String(s.text).trim());
+        syl.title = stress === 1 ? "Primary stress" : stress === 2 ? "Secondary stress" : "Unstressed";
+        sylWrap.appendChild(syl);
+        if (i < validSyllables.length - 1) sylWrap.appendChild(el("span", "qp-syl-sep", QP.respell.MIDDOT));
+      });
+      rLine.appendChild(sylWrap);
       if (sylCount) {
         rLine.appendChild(document.createTextNode(" "));
         rLine.appendChild(el("span", "qp-dim", "· " + sylCount + (sylCount === 1 ? " syllable" : " syllables")));
@@ -185,8 +209,12 @@
             });
             tab.classList.add("qp-sense--active");
             tab.setAttribute("aria-pressed", "true");
-            meaning.textContent = s.definition;
-            posLine.textContent = s.pos || "";
+            meaning.classList.add("qp-meaning--fading");
+            setTimeout(function () {
+              meaningText.textContent = s.definition;
+              posLine.textContent = s.pos || "";
+              meaning.classList.remove("qp-meaning--fading");
+            }, 120);
           });
           senseRow.appendChild(tab);
         });
@@ -194,7 +222,13 @@
       }
       body.appendChild(meaningHead);
 
-      var meaning = el("div", "qp-meaning", senses[0].definition);
+      // padding lives on .qp-meaning (the callout box); the 3-line clamp
+      // lives on a separate, padding-less inner element - Chromium can let a
+      // stray 4th line escape the clamp boundary when line-clamp and padding
+      // sit on the same element, so they're kept apart.
+      var meaning = el("div", "qp-meaning");
+      var meaningText = el("div", "qp-meaning__text", senses[0].definition);
+      meaning.appendChild(meaningText);
       body.appendChild(meaning);
     }
 
@@ -365,7 +399,7 @@
   }
 
   function renderMessage(root, opts, ctx) {
-    var card = el("div", "qp-card");
+    var card = el("div", cardClass(ctx));
     card.appendChild(el("div", "qp-card__bar"));
     var msg = el("div", "qp-msg");
     msg.appendChild(el("div", "qp-msg__title", opts.title));
@@ -414,7 +448,7 @@
     ctx.openUrl = ctx.openUrl || function (u) { try { window.open(u, "_blank", "noopener"); } catch (e) {} };
     ctx.requestAudio = ctx.requestAudio || function () { return Promise.resolve({ ok: false }); };
 
-    if (view.kind === "loading") return renderLoading(root, view);
+    if (view.kind === "loading") return renderLoading(root, view, ctx);
 
     switch (view.state) {
       case "ok":

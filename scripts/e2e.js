@@ -248,6 +248,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (word !== "accommodation") throw new Error("card word=" + word);
   });
 
+  await test("syllables render as stress-coded spans, one per syllable, exactly one primary", async () => {
+    const info = await page.evaluate(() => {
+      const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
+      const syls = Array.from(sr.querySelectorAll(".qp-syl"));
+      return {
+        count: syls.length,
+        primaryCount: syls.filter((s) => s.classList.contains("qp-syl--1")).length,
+        hasTitles: syls.every((s) => !!s.title),
+        ariaLabel: sr.querySelector(".qp-respell-line") && sr.querySelector(".qp-respell-line").getAttribute("aria-label")
+      };
+    });
+    if (info.count < 2) throw new Error("expected multiple syllable spans, got " + info.count);
+    if (info.primaryCount !== 1) throw new Error("expected exactly one primary-stress syllable, got " + info.primaryCount);
+    if (!info.hasTitles) throw new Error("every syllable span should have a stress tooltip");
+    if (!info.ariaLabel) throw new Error("respell line should carry an aria-label fallback for assistive tech");
+    return `${info.count} syllables, aria-label="${info.ariaLabel}"`;
+  });
+
   await test("ambiguous word on-page: pos tabs render and switching updates the definition", async () => {
     // dismiss the still-open card from the previous test first - the content
     // script ignores new selections while a card is open (by design).
@@ -286,6 +304,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const tabs = sr.querySelectorAll(".qp-sense");
       tabs[tabs.length - 1].click(); // switch to the last (least preferred) sense
     });
+    // the swap is deliberately delayed ~120ms for a crossfade (see
+    // qp-meaning--fading in card.js/card.css.js), so wait for it instead of
+    // reading synchronously right after the click.
+    await page.waitForFunction(
+      (beforeDef) => {
+        const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
+        const def = sr.querySelector(".qp-meaning").textContent;
+        return def !== beforeDef;
+      },
+      { timeout: 2000 },
+      before.def
+    );
     const after = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
       return { pos: sr.querySelector(".qp-hero__pos").textContent, def: sr.querySelector(".qp-meaning").textContent };

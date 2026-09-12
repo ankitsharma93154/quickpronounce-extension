@@ -83,9 +83,29 @@
     "  box-shadow:var(--shadow-card);",
     "  overflow:hidden;",
     "  font-size:14px;",
+    "  animation:qp-card-in 0.18s ease-out;",
     "}",
+    "@keyframes qp-card-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }",
     ".qp-card__bar { height:3px; background:var(--primary-gradient); }",
     ".qp-card__body { padding:12px 14px 6px; }",
+
+    /* ---- roomy variant: the on-page card only (ctx.compact is false there).
+       The popup keeps the tight defaults above so Recent stays in view
+       without scrolling. ---- */
+    ".qp-card--roomy { width:360px; }",
+    ".qp-card--roomy .qp-card__body { padding:18px 20px 12px; }",
+    ".qp-card--roomy .qp-hero { padding:20px 48px 18px 20px; }",
+    ".qp-card--roomy .qp-hero__word { font-size:21px; }",
+    ".qp-card--roomy .qp-chips { margin-top:11px; }",
+    ".qp-card--roomy .qp-label { margin-top:13px; }",
+    ".qp-card--roomy .qp-meaning-head { margin-top:13px; }",
+    ".qp-card--roomy .qp-pron { margin-top:9px; }",
+    ".qp-card--roomy .qp-pron-row { padding:9px 14px; }",
+    ".qp-card--roomy .qp-respell-line { margin-top:11px; padding:9px 14px; }",
+    ".qp-card--roomy .qp-audio { margin-top:14px; gap:10px; }",
+    ".qp-card--roomy .qp-play { min-height:46px; padding:10px 14px; }",
+    ".qp-card--roomy .qp-meaning { margin-top:9px; padding:11px 14px; }",
+    ".qp-card--roomy .qp-foot { padding:11px 20px 14px; margin-top:10px; }",
 
     /* loading skeleton only - the "ok" result uses .qp-hero instead */
     ".qp-card__head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }",
@@ -115,9 +135,10 @@
     "  position:absolute; z-index:2; top:14px; right:14px; width:26px; height:26px;",
     "  display:inline-flex; align-items:center; justify-content:center; border-radius:50%;",
     "  border:0; background:rgba(255,255,255,0.22); color:#fff; font-size:15px; line-height:1; cursor:pointer;",
-    "  transition:background-color var(--transition);",
+    "  transition:background-color var(--transition), transform 0.15s ease;",
     "}",
-    ".qp-hero__close:hover { background:rgba(255,255,255,0.34); }",
+    ".qp-hero__close:hover { background:rgba(255,255,255,0.34); transform:rotate(90deg); }",
+    ".qp-hero__close:active { transform:rotate(90deg) scale(0.88); }",
     /* shared white focus ring for anything sitting on the purple hero - the
        usual purple .qp-focusable ring would be invisible against it */
     ".qp-focusable-light:focus-visible { outline:2px solid #fff; outline-offset:2px; }",
@@ -153,15 +174,31 @@
     "  margin-top:8px; padding:6px 12px; background:var(--tint-purple); border-radius:var(--radius-md);",
     "  font-size:13px; color:var(--text-primary); word-break:break-word;",
     "}",
-    ".qp-respell-line b { font-weight:700; }",
     ".qp-respell-line .qp-dim { color:var(--text-secondary); }",
+    /* stress-coded syllables: colour + weight, not letter case - matches
+       Pronounce_web/src/components/phoneticSection.js's stress-0/1/2 classes
+       (same tokens) so a reader who's seen the site recognizes it here too.
+       Each syllable also carries a title tooltip since the card has no room
+       for the website's persistent legend. */
+    ".qp-syl--0 { color:var(--text-secondary); font-weight:400; }",
+    ".qp-syl--2 { color:var(--text-primary); font-weight:500; }",
+    ".qp-syl--1 { color:var(--primary); font-weight:700; }",
+    ".qp-syl-sep { margin:0 1px; color:var(--text-secondary); opacity:0.75; }",
 
-    /* ---- meaning callout: the one deliberate amber accent in the card ---- */
+    /* ---- meaning callout: the one deliberate amber accent in the card.
+       padding/border/background live on .qp-meaning; the 3-line clamp lives
+       on .qp-meaning__text alone - Chromium lets a stray 4th line escape the
+       clamp boundary when -webkit-line-clamp and padding sit on the same
+       element, so they're deliberately kept on separate elements. ---- */
     ".qp-meaning {",
     "  margin-top:6px; padding:8px 12px; background:var(--amber-gradient); border:1px solid var(--amber-border);",
     "  border-radius:var(--radius-md); font-size:13px; color:var(--text-primary);",
-    "  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;",
+    "  transition:opacity 0.15s ease;",
     "}",
+    ".qp-meaning__text {",
+    "  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;",
+    "}",
+    ".qp-meaning--fading { opacity:0; }",
 
     /* part-of-speech tabs: which sense of an ambiguous word is showing */
     ".qp-senses { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }",
@@ -198,12 +235,13 @@
     "  border-color:transparent; color:#fff; box-shadow:var(--shadow-primary-sm);",
     "}",
     ".qp-play.qp-play--playing:hover {",
-    "  background:var(--btn-primary-bg); background-color:var(--primary);",
-    "  box-shadow:var(--shadow-primary-md); color:#fff;",
+    "  background-color:var(--primary); box-shadow:var(--shadow-primary-md); color:#fff;",
     "}",
     ".qp-play.qp-play--error { border-color:var(--status-error); color:var(--status-error); background:transparent; }",
     ".qp-play.qp-play--error:hover { background:rgba(239,68,68,0.08); }",
     ".qp-play__ico { width:16px; height:16px; flex:0 0 auto; }",
+    ".qp-play.qp-play--playing .qp-play__ico { animation:qp-icon-bounce 0.4s ease; }",
+    "@keyframes qp-icon-bounce { 0% { transform:scale(1); } 40% { transform:scale(1.18); } 100% { transform:scale(1); } }",
     ".qp-play__spin {",
     "  width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;",
     "  border-radius:50%; animation:qp-spin 0.7s linear infinite;",
@@ -248,7 +286,9 @@
     "  color:#fff; background:var(--btn-primary-bg); background-color:var(--primary);",
     "  box-shadow:var(--shadow-primary-md);",
     "  transition:transform .2s ease, box-shadow .2s ease;",
+    "  animation:qp-pill-in 0.18s cubic-bezier(.34,1.56,.64,1);",
     "}",
+    "@keyframes qp-pill-in { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }",
     ".qp-pill:hover { box-shadow:var(--shadow-primary-lg); transform:translateY(-1px); }",
     ".qp-pill svg { width:13px; height:13px; flex:0 0 auto; }",
     ".qp-pill:focus-visible { outline:2px solid #fff; outline-offset:2px; }",
@@ -256,9 +296,11 @@
     ".qp-focusable:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }",
 
     "@media (prefers-reduced-motion: reduce) {",
-    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close { transition:none; }",
-    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover { transform:none; }",
+    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card { transition:none; }",
+    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active { transform:none; }",
     "  .qp-play__spin { animation-duration:1.4s; }",
+    "  .qp-card, .qp-pill { animation:none; }",
+    "  .qp-play.qp-play--playing .qp-play__ico { animation:none; }",
     "}"
   ].join("\n");
 })();
