@@ -22,6 +22,16 @@ const OUT_DIR = path.join(__dirname, "..", "icons");
 const SOURCE = path.join(OUT_DIR, "source-logo.png");
 const SIZES = [16, 32, 48, 128];
 
+// The Chrome Web Store listing icon (uploaded separately from the manifest
+// icons, in the dashboard's Graphic assets section) has its own spec:
+// https://developer.chrome.com/docs/webstore/images#icons - 128x128 canvas,
+// but the artwork itself should sit in a 96x96 area with 16px of transparent
+// padding per side, and no opaque pixel touching the outer edge. The manifest
+// icons (toolbar, chrome://extensions) intentionally fill the full square -
+// that's a different UI context - so this is a distinct output file.
+const STORE_ICON_SIZE = 128;
+const STORE_ICON_CONTENT_SIZE = 96;
+
 // The source art leaves a wide white margin around the mark, which makes the
 // pinned toolbar icon look small. Crop to the coloured content plus a little
 // breathing room so the mark fills this fraction of the icon's wider axis,
@@ -298,6 +308,28 @@ function drawFallback(size) {
   return resample(Buffer.from(hi), S, S, size, size);
 }
 
+// Paste a `contentSize`x`contentSize` icon centred onto a transparent
+// `canvasSize`x`canvasSize` canvas, leaving equal padding on all sides.
+function padOntoTransparentCanvas(contentRGBA, contentSize, canvasSize) {
+  const out = Buffer.alloc(canvasSize * canvasSize * 4); // zero-filled = transparent
+  const offset = Math.round((canvasSize - contentSize) / 2);
+  for (let y = 0; y < contentSize; y++) {
+    const dy = y + offset;
+    if (dy < 0 || dy >= canvasSize) continue;
+    for (let x = 0; x < contentSize; x++) {
+      const dx = x + offset;
+      if (dx < 0 || dx >= canvasSize) continue;
+      const si = (y * contentSize + x) * 4;
+      const di = (dy * canvasSize + dx) * 4;
+      out[di] = contentRGBA[si];
+      out[di + 1] = contentRGBA[si + 1];
+      out[di + 2] = contentRGBA[si + 2];
+      out[di + 3] = contentRGBA[si + 3];
+    }
+  }
+  return out;
+}
+
 // --- minimal PNG encoder (RGBA) ----------------------------------------
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -364,4 +396,18 @@ for (const size of SIZES) {
   fs.writeFileSync(path.join(OUT_DIR, `icon${size}.png`), png);
   console.log(`  wrote icons/icon${size}.png (${png.length} bytes)`);
 }
+
+// Store listing icon: same mark, resampled to fit inside the padded area.
+const storeContent = cropped
+  ? roundCorners(
+      resample(cropped.rgba, cropped.size, cropped.size, STORE_ICON_CONTENT_SIZE, STORE_ICON_CONTENT_SIZE),
+      STORE_ICON_CONTENT_SIZE
+    )
+  : drawFallback(STORE_ICON_CONTENT_SIZE);
+const storeCanvas = padOntoTransparentCanvas(storeContent, STORE_ICON_CONTENT_SIZE, STORE_ICON_SIZE);
+const storePng = encodePNG(storeCanvas, STORE_ICON_SIZE);
+fs.writeFileSync(path.join(OUT_DIR, "icon128-store.png"), storePng);
+console.log(
+  `  wrote icons/icon128-store.png (${storePng.length} bytes) - ${STORE_ICON_CONTENT_SIZE}x${STORE_ICON_CONTENT_SIZE} artwork on a ${STORE_ICON_SIZE}x${STORE_ICON_SIZE} transparent canvas, for the Chrome Web Store listing upload only`
+);
 console.log("done");
