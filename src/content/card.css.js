@@ -160,7 +160,7 @@
     ".qp-meaning {",
     "  margin-top:6px; padding:8px 12px; background:var(--amber-gradient); border:1px solid var(--amber-border);",
     "  border-radius:var(--radius-md); font-size:13px; color:var(--text-primary);",
-    "  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;",
+    "  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;",
     "}",
 
     /* part-of-speech tabs: which sense of an ambiguous word is showing */
