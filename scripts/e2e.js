@@ -3,13 +3,14 @@
  * Automated smoke test. Loads the unpacked extension into the Chromium that
  * Pornounce_web's puppeteer already downloaded, then drives the real paths:
  * service worker, dictionary + audio API calls, normalize, not-found, the
- * daily cap, the session cache, the on-page selection pill + card, the popup,
- * the options page, and a privacy check on outbound requests.
+ * daily cap, the session cache, the on-page selection pill + card, the full
+ * audio playback lifecycle through the offscreen document, the popup, the
+ * options page, and a privacy check on outbound requests.
  *
  *   node scripts/e2e.js
  *
  * Needs puppeteer. It is not a dependency of this extension; the script
- * borrows the copy in the sibling Pronounce_web/node_modules. Makes ~9 real
+ * borrows the copy in the sibling Pronounce_web/node_modules. Makes ~11 real
  * calls to api.quickpronounce.site with whatever key is in config.js. This is
  * functional testing, not rate-limit probing.
  */
@@ -46,6 +47,17 @@ async function test(name, fn) {
   }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Poll a condition instead of a blind sleep - used for state that lives in
+// the service worker (a WebWorker handle has no waitForFunction of its own).
+async function waitFor(fn, timeoutMs, intervalMs) {
+  const start = Date.now();
+  for (;;) {
+    if (await fn()) return true;
+    if (Date.now() - start >= timeoutMs) return false;
+    await sleep(intervalMs || 100);
+  }
+}
 
 (async () => {
   let browser;
@@ -86,6 +98,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const worker = await swTarget.worker();
   const extId = new URL(swTarget.url()).host;
   console.log("extension id:", extId, "\n");
+
+  // Observer for the audio playback lifecycle tests further down. The
+  // offscreen document broadcasts AUDIO_EVENT via chrome.runtime.sendMessage,
+  // which every extension page (this worker included) receives directly -
+  // unlike a content script in a tab, which needs it relayed through
+  // chrome.tabs.sendMessage. That relay bug is exactly what let a real
+  // regression ship (Play button stuck in "loading" forever); the worker is
+  // used here as a reliable, race-free observer of what actually got
+  // broadcast, instead of racing to attach a CDP session to the offscreen
+  // target before its first messages fire.
+  await worker.evaluate(() => {
+    self.__qpAudioEvents = [];
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.type === "AUDIO_EVENT") self.__qpAudioEvents.push(msg);
+    });
+  });
 
   // ---- service worker internals ------------------------------------
   await test("service worker exposes QP + runLookup", async () => {
@@ -264,6 +292,143 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (!info.hasTitles) throw new Error("every syllable span should have a stress tooltip");
     if (!info.ariaLabel) throw new Error("respell line should carry an aria-label fallback for assistive tech");
     return `${info.count} syllables, aria-label="${info.ariaLabel}"`;
+  });
+
+  // ---- audio playback lifecycle (offscreen document) ----------------
+  // The 'accommodation' card from the tests above is still open with its two
+  // play buttons; reused here rather than doing a fresh lookup.
+  const playButtonState = (index) =>
+    page.evaluate((i) => {
+      const b = document.getElementById("qp-quickpronounce-host").shadowRoot.querySelectorAll(".qp-play")[i];
+      return {
+        playing: b.classList.contains("qp-play--playing"),
+        error: b.classList.contains("qp-play--error"),
+        disabled: b.disabled,
+        title: b.title
+      };
+    }, index);
+  const clickPlayButton = (index) =>
+    page.evaluate((i) => {
+      document.getElementById("qp-quickpronounce-host").shadowRoot.querySelectorAll(".qp-play")[i].click();
+    }, index);
+  const waitForButtons = (fn, timeout) =>
+    page.waitForFunction(
+      fn,
+      { timeout: timeout || 12000 },
+    );
+
+  await test("audio: clicking Play reaches 'playing', not stuck loading", async () => {
+    // This is the real regression: the offscreen doc's "playing" broadcast
+    // reached the background/popup but never the content script, because
+    // chrome.runtime.sendMessage doesn't deliver to a tab's content script -
+    // only chrome.tabs.sendMessage does. The button sat disabled in
+    // "loading" forever. If that relay breaks again, this test times out
+    // here instead of someone finding out by hand.
+    await clickPlayButton(0); // US
+    const reached = await waitFor(
+      async () => {
+        const s = await playButtonState(0);
+        return s.playing || s.error;
+      },
+      12000,
+      200
+    );
+    const state = await playButtonState(0);
+    if (!reached) throw new Error("US button never left loading (stuck). state=" + JSON.stringify(state));
+    if (!state.playing) throw new Error("US button settled in error, not playing: " + JSON.stringify(state));
+    return "US button reached playing";
+  });
+
+  await test("audio: playback creates the extension's offscreen document", async () => {
+    const target = await browser.waitForTarget((t) => t.url().includes("src/offscreen/offscreen.html"), {
+      timeout: 4000
+    });
+    if (!target) throw new Error("no offscreen document found");
+    return target.url();
+  });
+
+  await test("audio: switching US -> UK stops the first clip and plays the second", async () => {
+    await clickPlayButton(1); // UK
+    const settled = await waitFor(
+      async () => {
+        const s0 = await playButtonState(0);
+        const s1 = await playButtonState(1);
+        return !s0.playing && s1.playing;
+      },
+      12000,
+      200
+    );
+    if (!settled) {
+      const s0 = await playButtonState(0);
+      const s1 = await playButtonState(1);
+      throw new Error("accent switch didn't settle. US=" + JSON.stringify(s0) + " UK=" + JSON.stringify(s1));
+    }
+    // A stale "ended"/"stopped" belonging to the superseded US clip must not
+    // flip UK back off. Give any late/out-of-order message a real window to
+    // arrive and confirm the settled state actually holds.
+    await sleep(1000);
+    const s0 = await playButtonState(0);
+    const s1 = await playButtonState(1);
+    if (s0.playing || !s1.playing)
+      throw new Error(
+        "state regressed after settling (stale event reached the wrong button?). US=" +
+          JSON.stringify(s0) +
+          " UK=" +
+          JSON.stringify(s1)
+      );
+    return "US idle, UK playing, held for 1s";
+  });
+
+  await test("audio: rapid accent switching settles correctly, nothing left stuck loading", async () => {
+    // Fire clicks back to back with no waits in between - this is what
+    // actually stresses the playbackId ordering guard (a genuine race
+    // through real extension messaging, not a synthetic injected event).
+    await clickPlayButton(0);
+    await clickPlayButton(1);
+    await clickPlayButton(0);
+    await clickPlayButton(1); // last click: UK should end up the one playing
+    const settled = await waitFor(
+      async () => {
+        const s0 = await playButtonState(0);
+        const s1 = await playButtonState(1);
+        return !s0.playing && s1.playing && !s0.disabled && !s1.disabled;
+      },
+      12000,
+      200
+    );
+    const s0 = await playButtonState(0);
+    const s1 = await playButtonState(1);
+    if (!settled) throw new Error("rapid switching left a bad/stuck state. US=" + JSON.stringify(s0) + " UK=" + JSON.stringify(s1));
+    return "settled on UK playing after 4 rapid clicks, neither button stuck";
+  });
+
+  await test("audio: closing the card stops playback", async () => {
+    const before = await worker.evaluate(() => self.__qpAudioEvents.length);
+    // Clear the text selection first: Escape's own keyup handler re-runs the
+    // selection-pill check against whatever is still selected, which would
+    // otherwise reopen the pill a moment later and has nothing to do with
+    // what's being tested here (audio actually stopping).
+    await page.evaluate(() => window.getSelection().removeAllRanges());
+    await page.keyboard.press("Escape");
+
+    const gotStopped = await waitFor(
+      async () => {
+        const events = await worker.evaluate((from) => self.__qpAudioEvents.slice(from), before);
+        return events.some((e) => e.event === "stopped");
+      },
+      4000,
+      150
+    );
+    if (!gotStopped) {
+      const events = await worker.evaluate((from) => self.__qpAudioEvents.slice(from), before);
+      throw new Error("no 'stopped' AUDIO_EVENT after closing the card. events=" + JSON.stringify(events));
+    }
+    await waitForButtons(() => {
+      const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
+      const stage = sr.querySelector(".qp-stage");
+      return !stage || stage.style.display === "none";
+    }, 3000);
+    return "stopped event observed + card hidden";
   });
 
   await test("ambiguous word on-page: pos tabs render and switching updates the definition", async () => {
