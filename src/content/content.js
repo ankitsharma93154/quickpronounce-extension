@@ -25,6 +25,7 @@
   var mode = "none"; // none | pill | card
   var lastAnchorRect = null;
   var lastWord = "";
+  var pillWord = ""; // text that made the pill appear; see showPill()
   var currentCtx = null; // the ctx object handed to the open card (holds its <audio>)
 
   // ------------------------------------------------------------------ setup
@@ -102,7 +103,7 @@
         if (mode === "pill") hide();
         return;
       }
-      showPill(rect);
+      showPill(rect, text);
     },
     220
   );
@@ -118,9 +119,10 @@
     };
   }
 
-  function showPill(rect) {
+  function showPill(rect, text) {
     ensureHost();
     lastAnchorRect = rect;
+    pillWord = text || "";
     stage.innerHTML = "";
     stage.style.display = "block";
 
@@ -138,7 +140,14 @@
     pill.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
+      // Prefer the live selection (the user may have adjusted it since the
+      // pill appeared), but some pages (e.g. a React app re-rendering the
+      // text under an active selection) leave getSelection() empty by click
+      // time even though nothing looked different - fall back to the text
+      // that made the pill appear rather than surface a wrong "select a
+      // single word" error for what's really a stale selection.
       var text = currentSelectionText();
+      if (!looksLikeLookup(text)) text = pillWord;
       startLookup(text, lastAnchorRect);
     });
     stage.appendChild(pill);
@@ -150,6 +159,7 @@
   // ------------------------------------------------------------------ card
   function startLookup(rawText, rect) {
     ensureHost();
+    if (currentCtx) QP.card.stopPlayback(currentCtx);
     lastAnchorRect = rect || selectionRect() || centerRect();
     lastWord = rawText;
     mode = "card";
@@ -238,13 +248,7 @@
 
   function hide() {
     mode = "none";
-    if (currentCtx && currentCtx._audio) {
-      try {
-        currentCtx._audio.pause();
-      } catch (e) {
-        /* noop */
-      }
-    }
+    if (currentCtx) QP.card.stopPlayback(currentCtx);
     currentCtx = null;
     if (stage) {
       stage.style.display = "none";
@@ -283,6 +287,13 @@
     true
   );
 
+  // Playback lives in the extension's offscreen document now (see card.js),
+  // not a local <audio> element, so it no longer dies automatically with
+  // this page - stop it explicitly on navigation/unload.
+  window.addEventListener("pagehide", function () {
+    if (currentCtx) QP.card.stopPlayback(currentCtx);
+  });
+
   try {
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area === "local" && changes.settings) {
@@ -308,6 +319,7 @@
     }
     if (msg.type === "SHOW_CARD") {
       ensureHost();
+      if (currentCtx) QP.card.stopPlayback(currentCtx);
       lastAnchorRect = selectionRect() || centerRect();
       lastWord = currentSelectionText();
       mode = "card";

@@ -46,6 +46,10 @@ var CONTENT_FILES = [
 var memModels = new Map(); // word -> shaped dictionary model
 var memAudio = new Map(); // "word::accent" -> { base64, format }
 
+var OFFSCREEN_URL = "src/offscreen/offscreen.html";
+var playbackCounter = 0;
+var playbackTabs = new Map(); // playbackId -> tabId, for requests that came from a content script
+
 // ---------------------------------------------------------------------------
 // Install / context menu
 // ---------------------------------------------------------------------------
@@ -69,7 +73,9 @@ chrome.runtime.onInstalled.addListener(function (details) {
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   if (info.menuItemId !== "qp-pronounce" || !tab || tab.id == null) return;
-  requestOnPageCard(tab.id, info.selectionText || "", "context_menu");
+  var text = info.selectionText || "";
+  if (!text.trim()) return; // nothing usable (e.g. a canvas-rendered editor getSelection() can't read); stay silent
+  requestOnPageCard(tab.id, text, "context_menu");
 });
 
 // ---------------------------------------------------------------------------
@@ -85,7 +91,15 @@ chrome.commands.onCommand.addListener(function (command) {
         return sendToTab(tab.id, { type: "GET_SELECTION" });
       })
       .then(function (resp) {
-        requestOnPageCard(tab.id, (resp && resp.text) || "", "keyboard");
+        var text = (resp && resp.text) || "";
+        // Nothing selected, or the page doesn't expose a real selection to
+        // getSelection() (Google Docs/Slides/Classroom draw text on a canvas/
+        // overlay and don't; see the on-page pill, which already stays
+        // silent in this case via looksLikeLookup). Showing "Select a single
+        // word" here would blame the wrong thing - so match the pill and do
+        // nothing instead.
+        if (!text.trim()) return;
+        requestOnPageCard(tab.id, text, "keyboard");
       })
       .catch(function () {
         /* restricted page (chrome://, web store, PDF viewer, ...) */
@@ -110,6 +124,22 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (msg.type === "GET_USAGE") {
     QP.cap.snapshot().then(sendResponse);
     return true;
+  }
+  if (msg.type === "PLAY_AUDIO") {
+    var tabId = sender && sender.tab && sender.tab.id != null ? sender.tab.id : null;
+    playAudio(msg.base64, msg.format, tabId).then(sendResponse);
+    return true;
+  }
+  if (msg.type === "STOP_AUDIO") {
+    stopAudio(msg.playbackId);
+    return false;
+  }
+  if (msg.type === "AUDIO_EVENT") {
+    // From the offscreen document. chrome.runtime.sendMessage only reaches
+    // other extension pages (this worker, the popup) - never a content
+    // script in a tab, which needs tabs.sendMessage instead. Relay it there.
+    relayAudioEventToTab(msg);
+    return false;
   }
   return false;
 });
@@ -265,6 +295,74 @@ async function getAudio(word, accent) {
       retryAfter: err && err.retryAfter
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Offscreen audio playback
+//
+// Playing the fetched audio in the content script's own page is what used to
+// get silently blocked: the <audio>/blob: URL lives in the host page's DOM,
+// so a host CSP with no media-src (falling back to a strict default-src)
+// refuses to load it. The offscreen document is a chrome-extension:// page
+// with its own CSP, so it's never subject to whatever the host page sends.
+// This just relays base64 audio there; src/offscreen/offscreen.js does the
+// actual decoding + playing and reports state back via broadcast messages
+// tagged with a playbackId.
+// ---------------------------------------------------------------------------
+function ensureOffscreenDocument() {
+  return chrome.offscreen
+    .createDocument({
+      url: OFFSCREEN_URL,
+      reasons: ["AUDIO_PLAYBACK"],
+      justification:
+        "Play pronunciation audio in an extension-owned page so the host page's Content-Security-Policy can't block it."
+    })
+    .catch(function (err) {
+      // "Only a single offscreen document may be created" - one already
+      // exists from an earlier lookup (or a concurrent request won the
+      // race); that's the success case, not a failure.
+      var msg = String((err && err.message) || err);
+      if (msg.indexOf("single offscreen") === -1 && msg.indexOf("already exists") === -1) throw err;
+    });
+}
+
+function playAudio(base64, format, tabId) {
+  var playbackId = ++playbackCounter;
+  if (tabId != null) playbackTabs.set(playbackId, tabId);
+  return ensureOffscreenDocument()
+    .then(function () {
+      chrome.runtime.sendMessage(
+        { type: "OFFSCREEN_PLAY", playbackId: playbackId, base64: base64, format: format },
+        function () {
+          void chrome.runtime.lastError;
+        }
+      );
+      return { ok: true, playbackId: playbackId };
+    })
+    .catch(function (err) {
+      playbackTabs.delete(playbackId);
+      return { ok: false, kind: "offscreen_unavailable", message: err && err.message };
+    });
+}
+
+function stopAudio(playbackId) {
+  chrome.runtime.sendMessage({ type: "OFFSCREEN_STOP", playbackId: playbackId }, function () {
+    void chrome.runtime.lastError; // no offscreen doc / nothing playing is fine
+  });
+}
+
+// The popup gets AUDIO_EVENT directly (it's an extension page, same as this
+// worker); only a content script - living in a tab's own page - needs it
+// forwarded explicitly.
+function relayAudioEventToTab(msg) {
+  var tabId = playbackTabs.get(msg.playbackId);
+  if (msg.event === "ended" || msg.event === "stopped" || msg.event === "error") {
+    playbackTabs.delete(msg.playbackId);
+  }
+  if (tabId == null) return;
+  chrome.tabs.sendMessage(tabId, msg, function () {
+    void chrome.runtime.lastError; // tab navigated away/closed: nothing to update
+  });
 }
 
 // ---------------------------------------------------------------------------

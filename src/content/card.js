@@ -18,6 +18,11 @@
  *     onClose()     dismiss the card
  *     openUrl(url)  open a link in a new tab
  *     compact       boolean, true in the popup (no close button)
+ *
+ * QP.card.stopPlayback(ctx) - stop whatever audio this ctx is playing (the
+ * caller should call this when it closes/replaces the card ctx was given
+ * to). card.js stamps _activePlaybackId/_activeReset onto ctx itself; callers
+ * don't need to touch those fields directly.
  */
 (function () {
   var QP = (self.QP = self.QP || {});
@@ -249,6 +254,84 @@
     root.appendChild(card);
   }
 
+  // ------------------------------------------------------ offscreen audio
+  // Actual decoding + <audio> playback happens in the extension's offscreen
+  // document (src/offscreen/offscreen.js), not here: some host pages' CSP
+  // (no media-src, falling back to a strict default-src) blocks a blob: URL
+  // loaded into their own DOM. The offscreen document is a
+  // chrome-extension:// page with its own CSP, so it's never subject to the
+  // host page's policy. This module just relays base64 audio there via the
+  // background service worker and listens for playback state back, tagged
+  // with the playbackId the service worker handed back for that request -
+  // that's what keeps a stale ended/error from a superseded clip from
+  // touching a button that has since moved on to something else.
+  var playbackHandlers = {}; // playbackId -> onEvent(event, extra)
+
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener(function (msg) {
+      if (!msg || msg.type !== "AUDIO_EVENT" || msg.playbackId == null) return;
+      var handler = playbackHandlers[msg.playbackId];
+      if (!handler) return;
+      if (msg.event === "ended" || msg.event === "stopped" || msg.event === "error") {
+        delete playbackHandlers[msg.playbackId];
+      }
+      handler(msg.event, msg);
+    });
+  }
+
+  function sendRuntimeMessage(payload) {
+    return new Promise(function (resolve) {
+      try {
+        chrome.runtime.sendMessage(payload, function (resp) {
+          void chrome.runtime.lastError; // no listener / worker asleep: resp is undefined, handled below
+          resolve(resp);
+        });
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
+  // ctx._activePlaybackId/_activeReset track whichever button most recently
+  // asked the offscreen document to play, so a card close or a fresh lookup
+  // (see content.js/popup.js) can stop it even though the <audio> element
+  // itself lives outside this page.
+  function requestPlayback(ctx, base64, format, onEvent) {
+    sendRuntimeMessage({ type: "PLAY_AUDIO", base64: base64, format: format }).then(function (resp) {
+      if (!resp || !resp.ok) {
+        onEvent("error", { message: "Could not play audio" });
+        return;
+      }
+      var playbackId = resp.playbackId;
+      ctx._activePlaybackId = playbackId;
+      ctx._activeReset = function () {
+        onEvent("stopped");
+      };
+      playbackHandlers[playbackId] = function (event, extra) {
+        if (event === "ended" || event === "stopped" || event === "error") {
+          if (ctx._activePlaybackId === playbackId) {
+            ctx._activePlaybackId = null;
+            ctx._activeReset = null;
+          }
+        }
+        onEvent(event, extra);
+      };
+    });
+  }
+
+  // Exported as QP.card.stopPlayback so content.js/popup.js can stop
+  // whatever's playing when a card closes or a new lookup replaces it.
+  function stopPlayback(ctx) {
+    if (!ctx || ctx._activePlaybackId == null) return;
+    var playbackId = ctx._activePlaybackId;
+    var reset = ctx._activeReset;
+    delete playbackHandlers[playbackId];
+    ctx._activePlaybackId = null;
+    ctx._activeReset = null;
+    if (reset) reset(); // instant UI feedback; the message below is the real stop
+    sendRuntimeMessage({ type: "STOP_AUDIO", playbackId: playbackId });
+  }
+
   function makePlayButton(word, accent, ctx) {
     var btn = el("button", "qp-play qp-focusable");
     btn.type = "button";
@@ -289,19 +372,31 @@
       }
     }
 
+    function onPlaybackEvent(event, extra) {
+      if (event === "playing") {
+        state = "playing";
+        setPlaying();
+      } else if (event === "ended" || event === "stopped") {
+        state = "idle";
+        setIdle();
+      } else if (event === "error") {
+        state = "idle";
+        setError((extra && extra.message) || "Could not play audio");
+      }
+    }
+
     btn.addEventListener("click", function () {
       if (state === "loading") return;
       if (state === "playing") {
-        stopAudio(ctx);
-        state = "idle";
-        setIdle();
+        stopPlayback(ctx);
         return;
       }
 
-      // replay from cache if we already have the object URL
-      var cachedUrl = QP.audioCache.get(word, accent);
-      if (cachedUrl) {
-        play(cachedUrl);
+      // replay from cache if we already have the audio
+      var cached = QP.audioCache.get(word, accent);
+      if (cached) {
+        resetOthers(ctx, btn);
+        requestPlayback(ctx, cached.base64, cached.format, onPlaybackEvent);
         return;
       }
 
@@ -324,8 +419,9 @@
             else setError("Could not load audio");
             return;
           }
-          var url = QP.audioCache.fromBase64(word, accent, res.base64);
-          play(url);
+          QP.audioCache.put(word, accent, res.base64, res.format);
+          resetOthers(ctx, btn);
+          requestPlayback(ctx, res.base64, res.format, onPlaybackEvent);
         })
         .catch(function () {
           done();
@@ -334,40 +430,8 @@
         });
     });
 
-    function play(url) {
-      var audio = getAudio(ctx);
-      try {
-        audio.pause();
-      } catch (e) {
-        /* noop */
-      }
-      resetOthers(ctx, btn);
-      audio.src = url;
-      audio.onended = function () {
-        state = "idle";
-        setIdle();
-      };
-      audio.onerror = function () {
-        state = "idle";
-        setError("Could not play audio");
-      };
-      var p = audio.play();
-      if (p && p.catch) {
-        p.then(function () {
-          state = "playing";
-          setPlaying();
-        }).catch(function () {
-          state = "idle";
-          setError("Playback blocked");
-        });
-      } else {
-        state = "playing";
-        setPlaying();
-      }
-    }
-
     btn._qpReset = function () {
-      if (state === "playing") {
+      if (state === "playing" || state === "loading") {
         state = "idle";
         setIdle();
       }
@@ -376,20 +440,6 @@
     return btn;
   }
 
-  function getAudio(ctx) {
-    if (!ctx._audio) ctx._audio = new Audio();
-    return ctx._audio;
-  }
-  function stopAudio(ctx) {
-    if (ctx._audio) {
-      try {
-        ctx._audio.pause();
-        ctx._audio.currentTime = 0;
-      } catch (e) {
-        /* noop */
-      }
-    }
-  }
   function resetOthers(ctx, keepBtn) {
     var row = keepBtn.parentNode;
     if (!row) return;
@@ -528,5 +578,5 @@
     }
   }
 
-  QP.card = { render: render };
+  QP.card = { render: render, stopPlayback: stopPlayback };
 })();

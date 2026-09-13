@@ -9,7 +9,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["contextMenus", "storage", "scripting", "activeTab"],
+  "permissions": ["contextMenus", "storage", "scripting", "activeTab", "offscreen"],
   "host_permissions": ["https://api.quickpronounce.site/*"],
   "background": {
     "service_worker": "src/background/service-worker.js"
@@ -44,7 +44,8 @@
         "src/content/card.js",
         "src/content/content.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "commands": {

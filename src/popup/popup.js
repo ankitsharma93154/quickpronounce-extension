@@ -39,8 +39,10 @@
     });
   }
 
+  var activeCardCtx = null;
+
   function cardCtx() {
-    return {
+    var ctx = {
       accent: accent,
       compact: true,
       requestAudio: function (word, acc) {
@@ -52,6 +54,7 @@
         doLookup(input.value, "popup");
       },
       onClose: function () {
+        QP.card.stopPlayback(ctx);
         result.hidden = true;
         result.innerHTML = "";
       },
@@ -59,12 +62,22 @@
         chrome.tabs.create({ url: url });
       }
     };
+    return ctx;
   }
 
   function showView(view) {
+    if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
     result.hidden = false;
-    QP.card.render(result, view, cardCtx());
+    activeCardCtx = cardCtx();
+    QP.card.render(result, view, activeCardCtx);
   }
+
+  // Audio now plays in the extension's offscreen document (see card.js), not
+  // a local <audio> element, so it no longer dies automatically when this
+  // popup closes - stop it explicitly.
+  window.addEventListener("pagehide", function () {
+    if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
+  });
 
   function doLookup(raw, source) {
     var text = String(raw || "").trim();
