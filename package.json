@@ -1,6 +1,6 @@
 {
   "name": "quickpronounce-extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "QuickPronounce browser extension (Manifest V3) - pronunciation for any word while you read. Free MVP.",
   "scripts": {
