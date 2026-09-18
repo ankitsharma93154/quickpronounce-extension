@@ -15,6 +15,7 @@
   var recentsList = $("pp-recents-list");
   var recentsEmpty = $("pp-recents-empty");
   var usageEl = $("pp-usage");
+  var suggestList = $("pp-suggest");
 
   // Bring the shared card stylesheet into this document.
   var style = document.createElement("style");
@@ -96,7 +97,125 @@
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    hideSuggestions();
     doLookup(input.value, "popup");
+  });
+
+  // --- search suggestions --------------------------------------------
+  // Bundled wordlist (src/data/wordlist.txt), loaded lazily on first focus
+  // or keystroke and kept in memory only for this popup's lifetime - the
+  // popup's JS is torn down on close, so there is nothing to persist here.
+  var suggestions = [];
+  var suggestIndex = -1;
+  var suggestQuery = "";
+  var wordlistPromise = null;
+
+  function ensureWordlist() {
+    if (!wordlistPromise) {
+      wordlistPromise = QP.suggest.load(chrome.runtime.getURL("src/data/wordlist.txt"));
+    }
+    return wordlistPromise;
+  }
+
+  function hideSuggestions() {
+    suggestions = [];
+    suggestIndex = -1;
+    suggestQuery = "";
+    suggestList.hidden = true;
+    suggestList.innerHTML = "";
+    input.setAttribute("aria-expanded", "false");
+  }
+
+  function renderSuggestions() {
+    suggestList.innerHTML = "";
+    suggestions.forEach(function (word, i) {
+      var li = document.createElement("li");
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pp-suggest-item" + (i === suggestIndex ? " pp-suggest-active" : "");
+      btn.setAttribute("role", "option");
+      // Muted typed prefix + bold completed remainder, e.g. "behal" + "f".
+      var typed = document.createElement("span");
+      typed.className = "pp-suggest-typed";
+      typed.textContent = word.slice(0, suggestQuery.length);
+      var rest = document.createElement("span");
+      rest.className = "pp-suggest-rest";
+      rest.textContent = word.slice(suggestQuery.length);
+      btn.appendChild(typed);
+      btn.appendChild(rest);
+      // Plain click, same as .pp-recent and every other button in this
+      // popup - nothing here hides the dropdown on blur, so there is no
+      // input-blur race to dodge with a mousedown+preventDefault trick.
+      btn.addEventListener("click", function () {
+        selectSuggestion(word);
+      });
+      li.appendChild(btn);
+      suggestList.appendChild(li);
+    });
+    suggestList.hidden = suggestions.length === 0;
+    input.setAttribute("aria-expanded", suggestions.length > 0 ? "true" : "false");
+  }
+
+  function updateSuggestions() {
+    var text = input.value.trim().toLowerCase();
+    if (!text) {
+      hideSuggestions();
+      return;
+    }
+    ensureWordlist().then(function (list) {
+      // The list the user is still typing may have moved on by the time the
+      // (one-time) load resolves - re-check against the live input value.
+      if (input.value.trim().toLowerCase() !== text) return;
+      var matches = QP.suggest.pickPrefixMatches(list, text, 5);
+      var exact = matches.indexOf(text) !== -1;
+      suggestions = exact ? [] : matches;
+      suggestIndex = -1;
+      suggestQuery = text;
+      renderSuggestions();
+    });
+  }
+
+  // Selecting a suggestion performs the exact same lookup as pressing Enter.
+  function selectSuggestion(word) {
+    input.value = word;
+    hideSuggestions();
+    doLookup(word, "popup_suggest");
+  }
+
+  input.addEventListener("focus", function () {
+    ensureWordlist();
+  });
+
+  input.addEventListener("input", function () {
+    updateSuggestions();
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if (suggestList.hidden || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      suggestIndex = suggestIndex < suggestions.length - 1 ? suggestIndex + 1 : 0;
+      renderSuggestions();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      suggestIndex = suggestIndex > 0 ? suggestIndex - 1 : suggestions.length - 1;
+      renderSuggestions();
+    } else if (e.key === "Enter") {
+      if (suggestIndex >= 0) {
+        e.preventDefault();
+        selectSuggestion(suggestions[suggestIndex]);
+      } else {
+        hideSuggestions();
+      }
+    } else if (e.key === "Escape") {
+      hideSuggestions();
+    }
+  });
+
+  document.addEventListener("mousedown", function (e) {
+    if (!suggestList.hidden && !e.target.closest(".pp-search-wrap")) {
+      hideSuggestions();
+    }
   });
 
   $("pp-settings").addEventListener("click", function () {

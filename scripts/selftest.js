@@ -62,7 +62,7 @@ function load(rel) {
   vm.runInContext(code, sandbox, { filename: rel });
 }
 
-["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js"].forEach(load);
+["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js", "src/core/suggest.js"].forEach(load);
 
 const QP = sandbox.QP;
 
@@ -210,6 +210,33 @@ const QP = sandbox.QP;
     const senses = QP.api.pickSenses(entries, "Noun");
     eq("single-entry word unchanged", senses.length, 1);
     eq("single-entry word: definition intact", senses[0].definition, "The formal or informal way in which a word is made to sound when spoken.");
+  }
+
+  console.log("suggest (prefix matching over a bundled wordlist):");
+  {
+    const list = ["ace", "act", "action", "actor", "add", "apple", "banana", "bandana", "band"].sort();
+    eq(
+      "multiple suggestions share a prefix, in sorted order",
+      QP.suggest.pickPrefixMatches(list, "ac"),
+      ["ace", "act", "action", "actor"]
+    );
+    eq(
+      "limit caps the number of suggestions",
+      QP.suggest.pickPrefixMatches(list, "ac", 2),
+      ["ace", "act"]
+    );
+    eq("no-match prefix -> empty list", QP.suggest.pickPrefixMatches(list, "zzz"), []);
+    eq(
+      "prefix matching an exact entry still returns it among matches",
+      QP.suggest.pickPrefixMatches(list, "band"),
+      ["band", "bandana"]
+    );
+    eq(
+      "single-candidate prefix",
+      QP.suggest.pickPrefixMatches(list, "app"),
+      ["apple"]
+    );
+    eq("empty prefix matches from the start of the list", QP.suggest.pickPrefixMatches(list, "", 3), ["ace", "act", "action"]);
   }
 
   console.log("\n" + (failed ? failed + " FAILED, " : "") + passed + " passed");

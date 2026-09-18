@@ -100,6 +100,47 @@ body {
 }
 .pp-go:hover { box-shadow: var(--shadow-primary-md); transform: translateY(-1px); }
 
+/* Deliberately normal document flow, not position:absolute. A real toolbar
+   popup is an auto-sizing native window sized from the document's normal
+   layout; absolutely-positioned overflow can paint past the window's actual
+   bounds without the window growing to match, which makes the dropdown
+   visible but unclickable in the real popup even though it works fine when
+   this same page is opened as a plain tab (as the e2e harness does). Flow
+   layout pushes the rest of the popup down instead, the same way #pp-result
+   already does. */
+.pp-suggest {
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-primary-sm);
+  max-height: 190px;
+  overflow-y: auto;
+}
+.pp-suggest li { margin: 0; }
+.pp-suggest li + li { margin-top: 1px; }
+.pp-suggest-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  transition: background-color var(--transition);
+}
+/* Typed part stays muted, the completed remainder is bolder and picks up the
+   brand color on hover/keyboard-select - draws the eye to what's new. */
+.pp-suggest-typed { color: var(--text-secondary); }
+.pp-suggest-rest { color: var(--text-primary); font-weight: 700; }
+.pp-suggest-item:hover,
+.pp-suggest-item.pp-suggest-active { background: rgba(var(--primary-rgb), 0.1); }
+.pp-suggest-item:hover .pp-suggest-rest,
+.pp-suggest-item.pp-suggest-active .pp-suggest-rest { color: var(--primary); }
+
 .pp-result { margin-top: 10px; }
 /* card.css.js gives the card a fixed 320px width for its floating on-page
    use; in the popup it should instead fill the same width as the search
@@ -162,6 +203,6 @@ body {
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pp-go, .pp-icon-btn, .pp-recent, .pp-input { transition: none; }
+  .pp-go, .pp-icon-btn, .pp-recent, .pp-input, .pp-suggest-item { transition: none; }
   .pp-go:hover { transform: none; }
 }

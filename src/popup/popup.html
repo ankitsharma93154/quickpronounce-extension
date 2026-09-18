@@ -22,17 +22,23 @@
         </button>
       </header>
 
-      <form id="pp-form" class="pp-search" autocomplete="off">
-        <input
-          id="pp-input"
-          class="pp-input"
-          type="text"
-          placeholder="Search pronunciation..."
-          aria-label="Search pronunciation"
-          spellcheck="false"
-        />
-        <button class="pp-go" type="submit" aria-label="Look up">Go</button>
-      </form>
+      <div class="pp-search-wrap">
+        <form id="pp-form" class="pp-search" autocomplete="off">
+          <input
+            id="pp-input"
+            class="pp-input"
+            type="text"
+            placeholder="Search pronunciation..."
+            aria-label="Search pronunciation"
+            aria-autocomplete="list"
+            aria-controls="pp-suggest"
+            aria-expanded="false"
+            spellcheck="false"
+          />
+          <button class="pp-go" type="submit" aria-label="Look up">Go</button>
+        </form>
+        <ul id="pp-suggest" class="pp-suggest" role="listbox" hidden></ul>
+      </div>
 
       <div id="pp-result" class="pp-result" hidden></div>
 
@@ -57,6 +63,7 @@
     <script src="../core/respell.js"></script>
     <script src="../core/normalize.js"></script>
     <script src="../core/audioCache.js"></script>
+    <script src="../core/suggest.js"></script>
     <script src="../core/store.js"></script>
     <script src="../core/analytics.js"></script>
     <script src="../content/card.css.js"></script>

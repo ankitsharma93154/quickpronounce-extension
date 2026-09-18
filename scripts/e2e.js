@@ -575,6 +575,95 @@ async function waitFor(fn, timeoutMs, intervalMs) {
     return "usage line: " + (usage || "(empty)");
   });
 
+  await test("popup: search suggestions appear, keyboard-select triggers the same lookup as Enter", async () => {
+    const pop = await browser.newPage();
+    const perr = [];
+    pop.on("pageerror", (e) => perr.push(e.message));
+    await pop.goto(`chrome-extension://${extId}/src/popup/popup.html`, { waitUntil: "domcontentloaded" });
+    await pop.type("#pp-input", "espr");
+    try {
+      await pop.waitForFunction(
+        () => !document.getElementById("pp-suggest").hidden && document.querySelectorAll("#pp-suggest .pp-suggest-item").length > 0,
+        { timeout: 4000 }
+      );
+    } catch (e) {
+      await pop.close();
+      throw new Error(`suggestions never appeared. pageerrors=[${perr.join("|")}]`);
+    }
+    const firstText = await pop.$eval("#pp-suggest .pp-suggest-item", (n) => n.textContent);
+    await pop.keyboard.press("ArrowDown");
+    await pop.waitForFunction(() => document.querySelector("#pp-suggest .pp-suggest-active"), { timeout: 2000 });
+    await pop.keyboard.press("Enter");
+    try {
+      await pop.waitForFunction(
+        () => document.querySelector("#pp-result .qp-card") && document.querySelector("#pp-result .qp-pron-row__ipa"),
+        { timeout: 12000 }
+      );
+    } catch (e) {
+      const txt = await pop.$eval("#pp-result", (n) => n.innerText).catch(() => "(no #pp-result content)");
+      await pop.close();
+      throw new Error(`selecting suggestion "${firstText}" did not produce a card. result="${txt.slice(0, 160)}"`);
+    }
+    const inputValue = await pop.$eval("#pp-input", (n) => n.value);
+    const suggestHidden = await pop.$eval("#pp-suggest", (n) => n.hidden);
+    await pop.close();
+    if (inputValue !== firstText) throw new Error(`input value "${inputValue}" did not match selected suggestion "${firstText}"`);
+    if (!suggestHidden) throw new Error("dropdown still visible after selecting a suggestion");
+    return `selected "${firstText}"`;
+  });
+
+  await test("popup: clicking a suggestion (not just keyboard) selects it and performs the lookup", async () => {
+    const pop = await browser.newPage();
+    const perr = [];
+    pop.on("pageerror", (e) => perr.push(e.message));
+    await pop.goto(`chrome-extension://${extId}/src/popup/popup.html`, { waitUntil: "domcontentloaded" });
+    await pop.type("#pp-input", "espr");
+    try {
+      await pop.waitForFunction(
+        () => !document.getElementById("pp-suggest").hidden && document.querySelectorAll("#pp-suggest .pp-suggest-item").length > 0,
+        { timeout: 4000 }
+      );
+    } catch (e) {
+      await pop.close();
+      throw new Error(`suggestions never appeared. pageerrors=[${perr.join("|")}]`);
+    }
+    const firstText = await pop.$eval("#pp-suggest .pp-suggest-item", (n) => n.textContent);
+    // A real .click() (full mousedown+mouseup+click), not a keyboard shortcut
+    // - this is the path a human using a mouse actually takes.
+    await pop.click("#pp-suggest .pp-suggest-item");
+    try {
+      await pop.waitForFunction(
+        () => document.querySelector("#pp-result .qp-card") && document.querySelector("#pp-result .qp-pron-row__ipa"),
+        { timeout: 12000 }
+      );
+    } catch (e) {
+      const txt = await pop.$eval("#pp-result", (n) => n.innerText).catch(() => "(no #pp-result content)");
+      await pop.close();
+      throw new Error(`clicking suggestion "${firstText}" did not produce a card. pageerrors=[${perr.join("|")}] result="${txt.slice(0, 160)}"`);
+    }
+    const inputValue = await pop.$eval("#pp-input", (n) => n.value);
+    const suggestHidden = await pop.$eval("#pp-suggest", (n) => n.hidden);
+    await pop.close();
+    if (inputValue !== firstText) throw new Error(`input value "${inputValue}" did not match clicked suggestion "${firstText}"`);
+    if (!suggestHidden) throw new Error("dropdown still visible after clicking a suggestion");
+    return `clicked "${firstText}"`;
+  });
+
+  await test("popup: no suggestions for a nonsense prefix, exact match hides the dropdown", async () => {
+    const pop = await browser.newPage();
+    await pop.goto(`chrome-extension://${extId}/src/popup/popup.html`, { waitUntil: "domcontentloaded" });
+    await pop.type("#pp-input", "zzzqqqxxx");
+    await sleep(600);
+    const noMatchHidden = await pop.$eval("#pp-suggest", (n) => n.hidden);
+    await pop.$eval("#pp-input", (n) => (n.value = ""));
+    await pop.type("#pp-input", "espresso");
+    await sleep(600);
+    const exactHidden = await pop.$eval("#pp-suggest", (n) => n.hidden);
+    await pop.close();
+    if (!noMatchHidden) throw new Error("dropdown shown for a prefix with no matches");
+    if (!exactHidden) throw new Error("dropdown still shown once the input exactly matches a word");
+  });
+
   // ---- options -------------------------------------------------
   await test("options page loads without console errors; controls present", async () => {
     const opt = await browser.newPage();

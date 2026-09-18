@@ -91,6 +91,12 @@ src/core/                     Shared modules, all classic scripts on a single `s
   offlineCache.js             read interface for the bundled pack (swappable later)
   audioCache.js               base64 -> Blob URL, per-document Map
   api.js                      the only module that calls the API (service worker only)
+  suggest.js                  prefix-match search suggestions over the bundled wordlist (popup only)
+src/data/
+  wordlist.txt                 bundled copy of the website's wordlist (~250k words, ~2.3MB),
+                              powers the popup's search suggestions with no network call and no
+                              extra host permission. Kept in sync via scripts/sync-wordlist.js -
+                              see "Keeping the bundled wordlist in sync" below.
 src/background/
   service-worker.js           context menu, keyboard command, all fetches, cap, recents
 src/content/
@@ -121,7 +127,31 @@ node scripts/check.js            # node --check every .js + manifest sanity
 node scripts/selftest.js         # normalize / respell / cap logic, no browser needed
 node scripts/e2e.js              # loads the extension in Chromium, drives it against the real API
 node scripts/package.js          # dist/quickpronounce-extension-<version>.zip for the stores
+node scripts/sync-wordlist.js    # refresh src/data/wordlist.txt from the website's copy
 ```
+
+---
+
+## Keeping the bundled wordlist in sync
+
+`src/data/wordlist.txt` is a plain copy of `Pronounce_web/public/wordlist.txt`,
+bundled into the extension so the popup's search suggestions work instantly
+offline instead of fetching ~2.3MB from the site on every popup open (a
+popup's JS context is destroyed on close, so there's no in-memory session to
+cache it in the way the website's SPA does). It is a **copy, not a link** -
+there is no build step or CI job that keeps the two in sync automatically.
+
+Whenever the website's wordlist is regenerated from a dataset refresh (see
+`wiktionary_dump/`), run this from a checkout where `Pronounce_web` is a
+sibling directory of this repo, then commit the result:
+
+```
+node scripts/sync-wordlist.js
+```
+
+If this step is skipped, the extension's suggestions just go stale (missing
+newly-added words) - it fails quietly, not loudly, so it's worth folding into
+whatever checklist accompanies a dataset refresh.
 
 ---
 
