@@ -8,6 +8,14 @@ Select a word on any page and a small card shows you:
 - a short definition
 - a link to the full entry on quickpronounce.site
 
+ABOUT THE PERMISSION CHROME SHOWS
+When you install, Chrome says QuickPronounce can "read and change all your
+data on all websites". That is the standard wording for any extension that
+works on every page, and it is needed so the Pronounce button can appear on
+whatever you are reading. QuickPronounce only sends the single word you
+choose to look up. It does not read page content, track the pages you visit,
+or build a browsing history.
+
 THREE WAYS TO USE IT
 - Select a word, then click the "Pronounce" button that appears.
 - Right-click a selection and choose "Pronounce with QuickPronounce".
