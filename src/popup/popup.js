@@ -265,9 +265,9 @@
           usageEl.textContent = "";
           return;
         }
-        var txt = u.used + " / " + u.limit + " words today";
+        var txt = u.used + " word" + (u.used === 1 ? "" : "s") + " looked up today";
         if (u.remaining === 0 && u.resetsAt) {
-          txt += " · resets in ~" + QP.util.hoursUntil(u.resetsAt) + "h";
+          txt = "Free lookups reset in ~" + QP.util.hoursUntil(u.resetsAt) + "h";
         }
         usageEl.textContent = txt;
       })

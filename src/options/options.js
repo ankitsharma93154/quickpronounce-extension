@@ -72,14 +72,13 @@
   });
 
   // --- usage ---------------------------------------------------------
-  $("op-limit").textContent = String(QP.config.DAILY_UNIQUE_WORD_LIMIT);
   function refreshUsage() {
     sendMessage({ type: "GET_USAGE" }).then(function (u) {
       if (!u) {
         $("op-usage").textContent = "—";
         return;
       }
-      var txt = u.used + " / " + u.limit + " new words in the last 24 hours";
+      var txt = u.used + " word" + (u.used === 1 ? "" : "s") + " looked up in the last 24 hours";
       if (u.resetsAt) txt += " · oldest resets in ~" + QP.util.hoursUntil(u.resetsAt) + "h";
       $("op-usage").textContent = txt;
     });
