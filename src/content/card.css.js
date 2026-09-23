@@ -216,6 +216,8 @@
 
     /* ---- audio buttons: model on .cta-button ---- */
     ".qp-audio { display:flex; gap:8px; margin-top:10px; }",
+    ".qp-placeholder { margin-top:6px; font-size:13px; color:var(--text-secondary); }",
+    ".qp-placeholder--small { margin-top:6px; font-size:11px; }",
     ".qp-play {",
     "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:7px;",
     "  min-height:43px; padding:9px 12px; font-size:14px; font-weight:700; cursor:pointer;",

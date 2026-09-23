@@ -5,7 +5,7 @@ generates its own install id on first run (see README "Auth: no API key, an
 install id instead"). This does require `quickpronounce_api`'s `/ext/v1/*`
 routes to be deployed and its `UPSTASH_REDIS_REST_URL` /
 `UPSTASH_REDIS_REST_TOKEN` set; until then every lookup 404s from the
-catch-all route and shows the "couldn't find a full entry" state, which is
+catch-all route and shows the "no dictionary entry yet" state, which is
 misleading in this one specific case - it means the routes aren't live yet,
 not that the word is missing.
 
@@ -86,8 +86,11 @@ real sites. Do those by hand below.
     Look up `serendipity` -> "Couldn't reach QuickPronounce" with **Try again**.
 19. Temporarily point `API_BASE` (in `config.js`) at a host that returns a
     500 (or stop the API) -> a clear error state, never a stuck spinner.
-20. Look up a nonsense string like `asdfghjk` -> "We couldn't find a full
-    entry for this word." with a QuickPronounce link.
+20. Look up a word with no dictionary entry (a rare name or a nonsense string
+    like `asdfghjk`) -> a card with a "no dictionary entry yet" chip, "IPA and
+    syllables not available yet", working US/UK play buttons, "Meaning not
+    available yet", and a "Search on QuickPronounce" link. The lookup counts
+    against the daily cap; playing the audio does not add to it.
 
 ## Dark pages
 

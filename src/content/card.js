@@ -254,6 +254,74 @@
     root.appendChild(card);
   }
 
+  // A word with no dictionary entry still gets machine-generated audio (the
+  // pronunciation endpoint synthesizes it regardless), so the card keeps the
+  // familiar layout with placeholders for the fields we don't have, instead
+  // of a dead end. The lookup already counted against the daily cap; playing
+  // audio adds nothing to it.
+  function renderNotFound(root, view, ctx) {
+    var word = view.word || "";
+    var url = QP.config.wordUrl(word);
+    var card = el("div", cardClass(ctx));
+
+    var hero = el("div", "qp-hero");
+    var heroLink = el("a", "qp-hero__link qp-focusable-light");
+    heroLink.href = url;
+    heroLink.appendChild(el("div", "qp-hero__word", word));
+    heroLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      ctx.openUrl(url);
+    });
+    hero.appendChild(heroLink);
+    if (!ctx.compact) {
+      var x = el("button", "qp-hero__close qp-focusable-light", "×");
+      x.type = "button";
+      x.setAttribute("aria-label", "Close");
+      x.addEventListener("click", ctx.onClose);
+      hero.appendChild(x);
+    }
+    card.appendChild(hero);
+
+    var body = el("div", "qp-card__body");
+
+    var chips = el("div", "qp-chips");
+    chips.appendChild(el("span", "qp-chip qp-chip--muted", "no dictionary entry yet"));
+    body.appendChild(chips);
+
+    body.appendChild(el("div", "qp-label", "Pronunciation"));
+    body.appendChild(el("div", "qp-placeholder", "IPA and syllables not available yet."));
+
+    var audioRow = el("div", "qp-audio");
+    audioRow.appendChild(makePlayButton(word, "us", ctx));
+    audioRow.appendChild(makePlayButton(word, "uk", ctx));
+    body.appendChild(audioRow);
+    body.appendChild(
+      el("div", "qp-placeholder qp-placeholder--small", "Machine-generated audio, so it may not be accurate.")
+    );
+
+    var meaningHead = el("div", "qp-meaning-head");
+    meaningHead.appendChild(el("div", "qp-label qp-label--amber", "Meaning"));
+    body.appendChild(meaningHead);
+    var meaning = el("div", "qp-meaning");
+    meaning.appendChild(el("div", "qp-meaning__text", "Meaning not available yet."));
+    body.appendChild(meaning);
+
+    card.appendChild(body);
+
+    var foot = el("div", "qp-foot");
+    var link = el("a", "qp-link qp-focusable", "Search on QuickPronounce");
+    link.href = url;
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      ctx.openUrl(url);
+    });
+    foot.appendChild(link);
+    foot.appendChild(el("span", "qp-brand", "QuickPronounce"));
+    card.appendChild(foot);
+
+    root.appendChild(card);
+  }
+
   // ------------------------------------------------------ offscreen audio
   // Actual decoding + <audio> playback happens in the extension's offscreen
   // document (src/offscreen/offscreen.js), not here: some host pages' CSP
@@ -504,15 +572,7 @@
       case "ok":
         return renderOk(root, view, ctx);
       case "not_found":
-        return renderMessage(
-          root,
-          {
-            title: "We couldn't find a full entry for this word.",
-            sub: view.word ? '"' + view.word + '" isn’t in the QuickPronounce dictionary yet.' : "",
-            link: { text: "Search on QuickPronounce", url: QP.config.wordUrl(view.word || "") }
-          },
-          ctx
-        );
+        return renderNotFound(root, view, ctx);
       case "cap":
         return renderMessage(
           root,
