@@ -44,6 +44,8 @@
     "  --amber-gradient:linear-gradient(135deg,#fdf1dd 0%,#fadfa4 100%);",
     "  --amber-border:#f6ddab;",
     "  --amber-text:#a15c07;",
+    "  --scroll-thumb:rgba(100,116,139,0.30);",
+    "  --scroll-thumb-hover:rgba(100,116,139,0.55);",
     "  --radius-sm:0.375rem;",
     "  --radius-md:0.5rem;",
     "  --radius-lg:0.875rem;",
@@ -69,6 +71,8 @@
     "    --amber-gradient:linear-gradient(135deg,#3a2c12 0%,#4d3814 100%);",
     "    --amber-border:#5c431c;",
     "    --amber-text:#e2a83f;",
+    "    --scroll-thumb:rgba(203,213,225,0.28);",
+    "    --scroll-thumb-hover:rgba(203,213,225,0.5);",
     "  }",
     "}",
 
@@ -154,7 +158,8 @@
     "  font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;",
     "  color:var(--text-secondary); margin-top:9px;",
     "}",
-    ".qp-label--amber { color:var(--amber-text); }",
+    /* legacy class name on the Meaning label; deliberately neutral now */
+    ".qp-label--amber { color:var(--text-secondary); }",
     ".qp-meaning-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 10px; margin-top:9px; }",
     ".qp-meaning-head .qp-label { margin-top:0; }",
     ".qp-meaning-head .qp-senses { margin-top:0; }",
@@ -163,10 +168,13 @@
     ".qp-pron { margin-top:6px; background:var(--tint-purple); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }",
     ".qp-pron-row { display:flex; align-items:baseline; gap:10px; padding:6px 12px; }",
     ".qp-pron-row + .qp-pron-row { border-top:1px solid var(--border-color); }",
-    ".qp-pron-row__accent { flex:0 0 auto; width:22px; font-size:11px; font-weight:700; color:var(--primary); text-transform:uppercase; }",
+    /* the IPA leads; the US/UK tag is a quiet label beside it. line-height is
+       tightened as the font grows so each row stays the height it was. */
+    ".qp-pron-row__accent { flex:0 0 auto; width:22px; font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; }",
     ".qp-pron-row__ipa {",
     "  font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;",
-    "  font-size:14px; color:var(--text-primary); word-break:break-word;",
+    "  font-size:16px; font-weight:600; line-height:1.35; letter-spacing:0.01em;",
+    "  color:var(--text-primary); word-break:break-word;",
     "}",
 
     /* ---- respelling + syllable count, one line ---- */
@@ -185,13 +193,14 @@
     ".qp-syl--1 { color:var(--primary); font-weight:700; }",
     ".qp-syl-sep { margin:0 1px; color:var(--text-secondary); opacity:0.75; }",
 
-    /* ---- meaning callout: the one deliberate amber accent in the card.
+    /* ---- meaning callout: supporting context, so a neutral surface rather
+       than an accent - pronunciation and the play buttons carry the colour.
        padding/border/background live on .qp-meaning; the 3-line clamp lives
        on .qp-meaning__text alone - Chromium lets a stray 4th line escape the
        clamp boundary when -webkit-line-clamp and padding sit on the same
        element, so they're deliberately kept on separate elements. ---- */
     ".qp-meaning {",
-    "  margin-top:6px; padding:8px 12px; background:var(--amber-gradient); border:1px solid var(--amber-border);",
+    "  margin-top:6px; padding:8px 12px; background:var(--bg-secondary); border:1px solid var(--border-color);",
     "  border-radius:var(--radius-md); font-size:13px; color:var(--text-primary);",
     "  transition:opacity 0.15s ease;",
     "}",
@@ -203,15 +212,18 @@
        so the card is never taller than it was before */
     ".qp-def { display:flex; gap:6px; }",
     ".qp-def + .qp-def { margin-top:7px; }",
-    ".qp-def__n { flex:none; color:var(--amber-text); font-weight:600; }",
+    ".qp-def__n { flex:none; color:var(--text-secondary); font-weight:600; }",
     ".qp-def .qp-meaning__text { flex:1; min-width:0; }",
     ".qp-defs--multi { max-height:calc(3 * 1.5em); overflow-y:auto; padding-right:6px; }",
-    /* always-visible slim amber scrollbar, no arrow buttons, so it reads as a
-       hint that there is more to scroll. Uses the ::-webkit-scrollbar family
-       because a standard scrollbar-width/-color would override it. */
-    ".qp-defs--multi::-webkit-scrollbar { width:6px; }",
-    ".qp-defs--multi::-webkit-scrollbar-track { background:rgba(0,0,0,0.06); border-radius:6px; }",
-    ".qp-defs--multi::-webkit-scrollbar-thumb { background:var(--amber-text); border-radius:6px; }",
+    /* slim, low-contrast scrollbar with no arrow buttons: present enough to
+       find, quiet until the cursor is over the list. The half-clipped second
+       definition is the main cue that there is more. Uses the
+       ::-webkit-scrollbar family because a standard scrollbar-width/-color
+       would override it. */
+    ".qp-defs--multi::-webkit-scrollbar { width:5px; }",
+    ".qp-defs--multi::-webkit-scrollbar-track { background:transparent; }",
+    ".qp-defs--multi::-webkit-scrollbar-thumb { background:var(--scroll-thumb); border-radius:5px; }",
+    ".qp-defs--multi:hover::-webkit-scrollbar-thumb { background:var(--scroll-thumb-hover); }",
     ".qp-defs--multi::-webkit-scrollbar-button { display:none; }",
     ".qp-defs--multi .qp-meaning__text { -webkit-line-clamp:2; }",
     ".qp-meaning--fading { opacity:0; }",
@@ -236,11 +248,14 @@
     ".qp-play {",
     "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:7px;",
     "  min-height:43px; padding:9px 12px; font-size:14px; font-weight:700; cursor:pointer;",
-    "  border:1px solid var(--border-primary-soft); border-radius:var(--radius-md);",
-    "  background:var(--border-primary-soft); color:var(--primary);",
+    /* the primary action: solid brand gradient at rest, like the hero. The
+       playing state is told apart by a ring (below), not by the fill. */
+    "  border:1px solid transparent; border-radius:var(--radius-md);",
+    "  background:var(--btn-primary-bg); background-color:var(--primary); color:#fff;",
+    "  box-shadow:var(--shadow-primary-sm);",
     "  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;",
     "}",
-    ".qp-play:hover { background:rgba(var(--primary-rgb),0.22); transform:translateY(-1px); }",
+    ".qp-play:hover { box-shadow:var(--shadow-primary-md); transform:translateY(-1px); }",
     ".qp-play:disabled { opacity:0.6; cursor:default; transform:none; }",
     /* Compound selectors (.qp-play.qp-play--X), not bare .qp-play--X: a bare
        single class has the same specificity as .qp-play:hover above, and
@@ -249,10 +264,12 @@
        near-white background. Compounding wins outright, hovered or not. */
     ".qp-play.qp-play--playing {",
     "  background:var(--btn-primary-bg); background-color:var(--primary);",
-    "  border-color:transparent; color:#fff; box-shadow:var(--shadow-primary-sm);",
+    "  border-color:transparent; color:#fff;",
+    "  box-shadow:0 0 0 3px rgba(var(--primary-rgb),0.28), var(--shadow-primary-sm);",
     "}",
     ".qp-play.qp-play--playing:hover {",
-    "  background-color:var(--primary); box-shadow:var(--shadow-primary-md); color:#fff;",
+    "  background-color:var(--primary); color:#fff;",
+    "  box-shadow:0 0 0 3px rgba(var(--primary-rgb),0.28), var(--shadow-primary-md);",
     "}",
     ".qp-play.qp-play--error { border-color:var(--status-error); color:var(--status-error); background:transparent; }",
     ".qp-play.qp-play--error:hover { background:rgba(239,68,68,0.08); }",
