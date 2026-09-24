@@ -198,6 +198,22 @@
     ".qp-meaning__text {",
     "  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;",
     "}",
+    /* several definitions: numbered, 2 lines each, list scrolls inside the
+       same 3-line height a single definition occupies (line-height is 1.5),
+       so the card is never taller than it was before */
+    ".qp-def { display:flex; gap:6px; }",
+    ".qp-def + .qp-def { margin-top:7px; }",
+    ".qp-def__n { flex:none; color:var(--amber-text); font-weight:600; }",
+    ".qp-def .qp-meaning__text { flex:1; min-width:0; }",
+    ".qp-defs--multi { max-height:calc(3 * 1.5em); overflow-y:auto; padding-right:6px; }",
+    /* always-visible slim amber scrollbar, no arrow buttons, so it reads as a
+       hint that there is more to scroll. Uses the ::-webkit-scrollbar family
+       because a standard scrollbar-width/-color would override it. */
+    ".qp-defs--multi::-webkit-scrollbar { width:6px; }",
+    ".qp-defs--multi::-webkit-scrollbar-track { background:rgba(0,0,0,0.06); border-radius:6px; }",
+    ".qp-defs--multi::-webkit-scrollbar-thumb { background:var(--amber-text); border-radius:6px; }",
+    ".qp-defs--multi::-webkit-scrollbar-button { display:none; }",
+    ".qp-defs--multi .qp-meaning__text { -webkit-line-clamp:2; }",
     ".qp-meaning--fading { opacity:0; }",
 
     /* part-of-speech tabs: which sense of an ambiguous word is showing */
@@ -217,7 +233,6 @@
     /* ---- audio buttons: model on .cta-button ---- */
     ".qp-audio { display:flex; gap:8px; margin-top:10px; }",
     ".qp-placeholder { margin-top:6px; font-size:13px; color:var(--text-secondary); }",
-    ".qp-placeholder--small { margin-top:6px; font-size:11px; }",
     ".qp-play {",
     "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:7px;",
     "  min-height:43px; padding:9px 12px; font-size:14px; font-weight:700; cursor:pointer;",

@@ -84,6 +84,32 @@
     root.appendChild(card);
   }
 
+  // Fills the Meaning callout with one sense's definitions. Padding lives on
+  // .qp-meaning (the callout box); the line clamp lives on a separate,
+  // padding-less inner element per definition - Chromium can let a stray extra
+  // line escape the clamp boundary when line-clamp and padding sit on the same
+  // element, so they're kept apart. With more than one definition the list
+  // scrolls inside a capped height so the card never grows; older cached or
+  // offline records only carry a single `definition`.
+  function fillMeaning(box, sense) {
+    clear(box);
+    var defs =
+      sense.definitions && sense.definitions.length
+        ? sense.definitions
+        : sense.definition
+          ? [sense.definition]
+          : [];
+    var multi = defs.length > 1;
+    var list = el("div", "qp-defs" + (multi ? " qp-defs--multi" : ""));
+    defs.forEach(function (d, i) {
+      var row = el("div", "qp-def");
+      if (multi) row.appendChild(el("span", "qp-def__n", i + 1 + "."));
+      row.appendChild(el("div", "qp-meaning__text", d));
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+  }
+
   function renderOk(root, view, ctx) {
     var m = view.model;
     var accent = ctx.accent === "uk" ? "uk" : "us";
@@ -216,7 +242,7 @@
             tab.setAttribute("aria-pressed", "true");
             meaning.classList.add("qp-meaning--fading");
             setTimeout(function () {
-              meaningText.textContent = s.definition;
+              fillMeaning(meaning, s);
               posLine.textContent = s.pos || "";
               meaning.classList.remove("qp-meaning--fading");
             }, 120);
@@ -227,13 +253,8 @@
       }
       body.appendChild(meaningHead);
 
-      // padding lives on .qp-meaning (the callout box); the 3-line clamp
-      // lives on a separate, padding-less inner element - Chromium can let a
-      // stray 4th line escape the clamp boundary when line-clamp and padding
-      // sit on the same element, so they're kept apart.
       var meaning = el("div", "qp-meaning");
-      var meaningText = el("div", "qp-meaning__text", senses[0].definition);
-      meaning.appendChild(meaningText);
+      fillMeaning(meaning, senses[0]);
       body.appendChild(meaning);
     }
 
@@ -295,9 +316,6 @@
     audioRow.appendChild(makePlayButton(word, "us", ctx));
     audioRow.appendChild(makePlayButton(word, "uk", ctx));
     body.appendChild(audioRow);
-    body.appendChild(
-      el("div", "qp-placeholder qp-placeholder--small", "Machine-generated audio, so it may not be accurate.")
-    );
 
     var meaningHead = el("div", "qp-meaning-head");
     meaningHead.appendChild(el("div", "qp-label qp-label--amber", "Meaning"));

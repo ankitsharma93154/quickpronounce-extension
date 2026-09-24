@@ -5,7 +5,7 @@ Select a word on any page and a small card shows you:
 - a plain-English respelling, like "pruh-NUN-see-AY-shun"
 - the syllable breakdown with stress marked
 - US and UK pronunciation audio
-- a short definition
+- short definitions
 - a link to the full entry on quickpronounce.site
 
 ABOUT THE PERMISSION CHROME SHOWS
@@ -31,8 +31,7 @@ build a browsing history, and includes no third-party analytics or tracking
 scripts. Your recent words and settings are stored locally in your browser.
 
 FREE
-QuickPronounce is free to use. Up to 40 new words per day; words you have
-already looked up keep working. Audio is generated on demand and cached so
+QuickPronounce is free to use. Audio is generated on demand and cached so
 replaying a word is instant.
 
 Made by QuickPronounce (quickpronounce.site).

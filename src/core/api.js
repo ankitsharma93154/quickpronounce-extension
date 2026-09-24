@@ -139,31 +139,51 @@
 
   // One sense per part of speech, reordered so the best default sense leads.
   // Returns [] if the word has no definitions at all.
+  // How many definitions one part of speech contributes to the card's
+  // scrollable Meaning list.
+  var MAX_DEFINITIONS = 3;
+
+  // Gathers every definition for a POS (all entries sharing it, and every
+  // definition within each entry), ordered so ordinary senses lead and
+  // rarity-tagged / alt-form / initialism ones follow. The order is stable, so
+  // the first ordinary definition still matches what the single-definition
+  // card used to show. If everything is non-primary the original order stands.
+  function rankDefinitions(defs) {
+    var seen = {};
+    var primary = [];
+    var rest = [];
+    for (var i = 0; i < defs.length; i++) {
+      var d = defs[i];
+      if (seen[d]) continue;
+      seen[d] = true;
+      (isNonPrimaryDefinition(d) ? rest : primary).push(d);
+    }
+    return primary.concat(rest).slice(0, MAX_DEFINITIONS);
+  }
+
   function pickSenses(entries, defaultPos) {
     var senses = [];
+    var defsByKey = []; // parallel to `senses`: every definition seen for it
     var indexByPos = {}; // pos key -> that pos's index into `senses`
     for (var i = 0; i < entries.length; i++) {
       var e = entries[i];
       if (!e || !Array.isArray(e.definitions) || !e.definitions.length) continue;
       var pos = e.partOfSpeech || null;
       var key = pos == null ? "#" + i : pos;
-      var definition = String(e.definitions[0]);
+      var entryDefs = e.definitions.map(String);
 
       if (!(key in indexByPos)) {
         indexByPos[key] = senses.length;
-        senses.push({ pos: pos, definition: definition });
-        continue;
+        senses.push({ pos: pos });
+        defsByKey.push(entryDefs);
+      } else {
+        defsByKey[indexByPos[key]] = defsByKey[indexByPos[key]].concat(entryDefs);
       }
-
-      // Already holding a sense for this POS - only swap it for this later
-      // entry if the one we're holding looks non-primary and this one
-      // doesn't. If every entry for this POS is non-primary, there's no
-      // better option, so the first stays (matches ~4.5% of duplicate-POS
-      // groups where nothing better is available).
-      var held = senses[indexByPos[key]];
-      if (isNonPrimaryDefinition(held.definition) && !isNonPrimaryDefinition(definition)) {
-        senses[indexByPos[key]] = { pos: pos, definition: definition };
-      }
+    }
+    for (var s = 0; s < senses.length; s++) {
+      var ranked = rankDefinitions(defsByKey[s]);
+      senses[s].definition = ranked[0];
+      senses[s].definitions = ranked;
     }
     if (!senses.length) return senses;
 

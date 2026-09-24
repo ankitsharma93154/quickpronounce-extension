@@ -212,6 +212,31 @@ const QP = sandbox.QP;
     eq("single-entry word: definition intact", senses[0].definition, "The formal or informal way in which a word is made to sound when spoken.");
   }
 
+  console.log("pickSenses (multiple definitions per part of speech):");
+  {
+    // several entries and several definitions per entry share one POS: all are
+    // gathered, ordinary ones first, obscure ones demoted, duplicates dropped,
+    // capped at three.
+    const entries = [
+      { partOfSpeech: "Verb", definitions: ["(archaic) To flow.", "To move quickly on foot."] },
+      { partOfSpeech: "Verb", definitions: ["To operate or manage.", "To move quickly on foot."] },
+      { partOfSpeech: "Verb", definitions: ["To continue over time."] }
+    ];
+    const senses = QP.api.pickSenses(entries, "Verb");
+    eq("multi-def: capped at 3", senses[0].definitions.length, 3);
+    eq("multi-def: ordinary senses lead, in order", senses[0].definitions, [
+      "To move quickly on foot.",
+      "To operate or manage.",
+      "To continue over time."
+    ]);
+    eq("multi-def: definition is the first ranked one", senses[0].definition, "To move quickly on foot.");
+  }
+  {
+    const entries = [{ partOfSpeech: "Noun", definitions: ["A test."] }];
+    const senses = QP.api.pickSenses(entries, "Noun");
+    eq("single definition stays a one-item list", senses[0].definitions, ["A test."]);
+  }
+
   console.log("suggest (prefix matching over a bundled wordlist):");
   {
     const list = ["ace", "act", "action", "actor", "add", "apple", "banana", "bandana", "band"].sort();
