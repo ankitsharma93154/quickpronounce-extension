@@ -1,12 +1,12 @@
 Pronounce any word while you read.
 
-Select a word on any page and a small card shows you:
-- IPA transcription (US and UK)
-- a plain-English respelling, like "pruh-NUN-see-AY-shun"
-- the syllable breakdown with stress marked
-- US and UK pronunciation audio
-- short definitions
-- a link to the full entry on quickpronounce.site
+QuickPronounce is a pronunciation dictionary that works on any page. Select a word and a small card shows you:
+• IPA transcription for US and UK English
+• a plain English respelling, like "pruh·NUN·see·AY·shun"
+• the syllable breakdown with stress marked
+• US and UK pronunciation audio
+• short definitions
+• a link to the full entry on quickpronounce.site
 
 ABOUT THE PERMISSION CHROME SHOWS
 When you install, Chrome says QuickPronounce can "read and change all your
@@ -17,17 +17,18 @@ choose to look up. It does not read page content, track the pages you visit,
 or build a browsing history.
 
 THREE WAYS TO USE IT
-- Select a word, then click the "Pronounce" button that appears.
-- Right-click a selection and choose "Pronounce with QuickPronounce".
-- Set a keyboard shortcut and pronounce the current selection instantly.
+• Select a word, then click the "Pronounce" button that appears.
+• Right click a selection and choose "Pronounce with QuickPronounce".
+• Set a keyboard shortcut and pronounce the current selection instantly.
 
-The toolbar popup lets you type a word to look up directly, see your last
-10 lookups, and check how many lookups you have left today.
+The toolbar popup lets you type a word to look up directly and see your last
+10 lookups. Not sure how to pronounce a word you just met in an article?
+Select it and hear it, without opening a new tab.
 
 PRIVACY
 QuickPronounce only ever sends the single word you explicitly ask about.
 It does not read page content, does not track the pages you visit, does not
-build a browsing history, and includes no third-party analytics or tracking
+build a browsing history, and includes no third party analytics or tracking
 scripts. Your recent words and settings are stored locally in your browser.
 
 FREE
