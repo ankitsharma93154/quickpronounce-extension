@@ -1,6 +1,6 @@
 # QuickPronounce extension - Privacy policy
 
-_Last updated: 2026-09-11_
+_Last updated: 2026-09-26_
 
 The QuickPronounce browser extension is built to do one job with the least
 possible access to your data.
@@ -47,6 +47,13 @@ sent so the service can give your install its own fair daily limit instead of
 every install sharing one budget. It identifies an install, not you - it is
 not tied to your name, email, account, or any other identifier, and no other
 device or browser profile shares it.
+
+To understand overall usage and how many installs come back, we keep daily
+totals (how many installs were active and how many lookups were made) and a
+shortened one-way hash of each active install ID. The hash is not used to
+identify you and cannot feasibly be used to recover the original random
+install ID. It is used only for usage and retention measurement. This data is
+kept for up to 90 days and then deleted.
 
 ## Permissions and why
 
