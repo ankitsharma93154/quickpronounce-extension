@@ -7,6 +7,51 @@ feedback makes the case. Unlike the "do NOT build until usage data" list in
 README.md (things never started), everything here was working code at some
 point - the design is proven, just not committed to.
 
+Two entries below (marked "proposed") are the exception: nothing was built,
+these are ideas from competitor research, kept here anyway since this is
+the closest thing to a deferred-ideas list.
+
+---
+
+## Color-coded vowel sounds on the card
+
+**Status:** proposed 2026-09-28, not built. From looking at Blue Canoe
+Pronunciation Dictionary (a competitor extension), which uses the
+"Color Vowel System" - assigns each of English's 14 vowel sounds a color
+plus a memorable two-word anchor phrase (e.g. "BLUE MOON", "GREEN TEA"), so
+a word is remembered by its color/phrase instead of an IPA symbol.
+
+**What it would be:** not their trademarked system or wording, just the
+underlying idea - a consistent color tint per vowel phoneme, shown on the
+stressed syllable in the card. The data this needs already exists:
+`us_ipa`/`uk_ipa` and per-syllable `stress: 1`/`stress: 0` are already in
+`data/*.json`. This would be a front-end-only change (a phoneme -> color
+map plus a style tweak in `card.js`/`card.css.js`), no new data pipeline,
+no backend work.
+
+**Why it's here and not just done:** genuinely cheap, but still a design
+decision (which colors, how prominent, does it clash with the existing
+card styling) worth doing deliberately rather than bolting on.
+
+## Bringing users back to their recent lookups
+
+**Status:** proposed 2026-09-28, not built. Overlaps with the "spaced
+repetition, flashcards, practice drills" line already in README.md's
+"Do NOT build until MVP usage data comes in" list - recorded here for the
+concrete shape it took, not to jump that list.
+
+**From looking at Speakerly** (a competitor extension/app): its whole paid
+tier is built around saving looked-up words and prompting spaced practice
+on them. The extension already stores the last 10 lookups
+(`store.js`/popup), but nothing ever resurfaces them to the user.
+
+**The concrete idea:** something small and low-effort as a first version,
+e.g. a popup line like "you looked this up 3 days ago, still remember it?"
+on a previously-seen word. Ties directly to the D1/D7 retention now being
+measured (see `quickpronounce_api/lib/usageSnapshot.js`) - this is a
+plausible lever for exactly that number, which is why it's worth
+remembering even while parked.
+
 ---
 
 ## "Did you mean" suggestions on a dictionary miss
