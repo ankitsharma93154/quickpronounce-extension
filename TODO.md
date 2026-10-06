@@ -26,6 +26,9 @@ a day or two, so target the regulars: they're the most likely to rate well.
   less intrusive).
 - Ask once, with a "later" that re-asks once at most, and never again after
   "no" or after a click through to the store.
+- Timing: the "golden hour" is 6 PM to 12 AM IST. On 2026-10-05, 62% of
+  that day's active installs first used the extension in that window
+  (peaks 7 to 9 PM and 10 to 11 PM IST). Consider showing the prompt then.
 - Event names for tracking shown / clicked / dismissed.
 - Store reviews URL:
   https://chromewebstore.google.com/detail/kndljjhkhmmgpleahjpkpopafinkkajk/reviews
