@@ -50,6 +50,8 @@
     wordUrl: function (word) {
       return "https://www.quickpronounce.site/?word=" + encodeURIComponent(word);
     },
+    // Where "Rate it" on the card's rating prompt goes (see ratePrompt.js).
+    REVIEWS_URL: "https://chromewebstore.google.com/detail/kndljjhkhmmgpleahjpkpopafinkkajk/reviews",
 
     // --- Behaviour -------------------------------------------------------
     REQUEST_TIMEOUT_MS: 8000,
@@ -58,6 +60,16 @@
     // already looked up in the window does not consume another lookup.
     DAILY_UNIQUE_WORD_LIMIT: 40,
     CAP_WINDOW_MS: 24 * 60 * 60 * 1000,
+
+    // One-line "Rate it" request on the on-page card, for engaged installs
+    // only (see ratePrompt.js for the rules).
+    RATE_PROMPT: {
+      MIN_INSTALL_DAYS: 7,
+      MIN_ACTIVE_DAYS: 4,
+      MIN_LOOKUPS: 25,
+      MAX_SHOWS: 2,
+      REASK_DELAY_MS: 7 * 24 * 60 * 60 * 1000
+    },
 
     RECENTS_MAX: 10,
     ANALYTICS_BUFFER_MAX: 250,

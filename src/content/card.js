@@ -6,7 +6,7 @@
  * QP.card.render(root, view, ctx)
  *   view:
  *     { kind: "loading", word }
- *     | { state: "ok", model, cached, offline, multiword, usage }
+ *     | { state: "ok", model, cached, offline, multiword, usage, ratePrompt? }
  *     | { state: "not_found", word }
  *     | { state: "cap", usage }
  *     | { state: "error", kind, retryAfter, word }
@@ -18,6 +18,7 @@
  *     onClose()     dismiss the card
  *     openUrl(url)  open a link in a new tab
  *     compact       boolean, true in the popup (no close button)
+ *     onRatePrompt(action)  the rating prompt was answered: rate|later|dismiss
  *
  * QP.card.stopPlayback(ctx) - stop whatever audio this ctx is playing (the
  * caller should call this when it closes/replaces the card ctx was given
@@ -260,6 +261,10 @@
 
     card.appendChild(body);
 
+    // The service worker only attaches ratePrompt for engaged installs (see
+    // ratePrompt.js); the popup never shows it.
+    if (view.ratePrompt && !ctx.compact) card.appendChild(renderRatePrompt(view.ratePrompt, ctx));
+
     // footer
     var foot = el("div", "qp-foot");
     var link = el("a", "qp-link qp-focusable", "View full definition");
@@ -273,6 +278,64 @@
     card.appendChild(foot);
 
     root.appendChild(card);
+  }
+
+  // One short paragraph above the footer, ending in the two choices.
+  // Answering swaps it for a one-line acknowledgement, and the box shrinks
+  // to fit that line.
+  function renderRatePrompt(prompt, ctx) {
+    var second = prompt.variant === "second";
+    var box = el("div", "qp-rate");
+    box.appendChild(
+      el(
+        "span",
+        "qp-rate__text",
+        second
+          ? "Still finding it useful? A rating takes a few seconds."
+          : "Finding QuickPronounce useful? A quick rating helps other learners find it."
+      )
+    );
+
+    // The choices end the sentence: read the question, then reach the
+    // buttons. They wrap together as one unit, never split across lines.
+    box.appendChild(document.createTextNode(" "));
+    var actions = el("span", "qp-rate__actions");
+    function answer(action, thanks) {
+      clear(box);
+      box.appendChild(el("span", "qp-rate__text", thanks));
+      ctx.onRatePrompt(action);
+    }
+
+    var rate = el("button", "qp-rate__go qp-focusable", "Rate it");
+    rate.type = "button";
+    rate.addEventListener("click", function () {
+      ctx.openUrl(QP.config.REVIEWS_URL);
+      answer("rate", "Thank you, that really helps.");
+    });
+    actions.appendChild(rate);
+
+    // The first showing's "Not now" asks again once (REASK_DELAY_MS later);
+    // the second showing's "No thanks" ends it.
+    var out = second
+      ? el("button", "qp-rate__btn qp-focusable", "No thanks")
+      : el("button", "qp-rate__btn qp-focusable", "Not now");
+    out.type = "button";
+    out.addEventListener("click", function () {
+      if (second) answer("dismiss", "Got it, we won't ask again.");
+      else answer("later", "Okay, we'll ask another time.");
+    });
+    actions.appendChild(out);
+
+    box.appendChild(actions);
+    return box;
+  }
+
+  // Lets content.js take the prompt off a card that's still open when it was
+  // answered somewhere else (another tab). A prompt already answered on this
+  // card (its buttons replaced by the acknowledgement) is left alone.
+  function removeRatePrompt(root) {
+    var node = root && root.querySelector && root.querySelector(".qp-rate");
+    if (node && node.querySelector(".qp-rate__actions") && node.parentNode) node.parentNode.removeChild(node);
   }
 
   // A word with no dictionary entry still gets machine-generated audio (the
@@ -583,6 +646,7 @@
     ctx.onClose = ctx.onClose || function () {};
     ctx.openUrl = ctx.openUrl || function (u) { try { window.open(u, "_blank", "noopener"); } catch (e) {} };
     ctx.requestAudio = ctx.requestAudio || function () { return Promise.resolve({ ok: false }); };
+    ctx.onRatePrompt = ctx.onRatePrompt || function () {};
 
     if (view.kind === "loading") return renderLoading(root, view, ctx);
 
@@ -656,5 +720,5 @@
     }
   }
 
-  QP.card = { render: render, stopPlayback: stopPlayback };
+  QP.card = { render: render, stopPlayback: stopPlayback, removeRatePrompt: removeRatePrompt };
 })();

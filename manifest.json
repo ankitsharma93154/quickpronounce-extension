@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "QuickPronounce: Word Pronunciation & IPA",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Select any word on any page to hear its pronunciation in US and UK English, with IPA, respelling and syllables. Free.",
   "icons": {
     "16": "icons/icon16.png",

@@ -22,6 +22,7 @@ importScripts(
   "../core/offlineCache.js",
   "../core/store.js",
   "../core/analytics.js",
+  "../core/ratePrompt.js",
   "../core/cap.js",
   "../core/api.js"
 );
@@ -66,8 +67,12 @@ chrome.runtime.onInstalled.addListener(function (details) {
   );
 
   if (details.reason === "install") {
-    QP.store.setMeta({ installedAt: Date.now() });
+    QP.store.setMeta({ installedAt: Date.now() }).then(QP.ratePrompt.ensureSeeded);
     QP.analytics.track(EV.INSTALLED, {});
+  } else if (details.reason === "update") {
+    // Installs from before the rating prompt existed: seed its counters from
+    // local history so existing regulars don't start from zero.
+    QP.ratePrompt.ensureSeeded();
   }
 });
 
@@ -119,6 +124,14 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   }
   if (msg.type === "GET_AUDIO") {
     getAudio(msg.word, msg.accent).then(sendResponse);
+    return true;
+  }
+  if (msg.type === "RATE_PROMPT") {
+    var action = msg.action === "rate" || msg.action === "later" ? msg.action : "dismiss";
+    QP.analytics.track(EV.RATE_PROMPT_ACTION, { action: action });
+    QP.ratePrompt.respond(action).then(function () {
+      sendResponse({ ok: true });
+    });
     return true;
   }
   if (msg.type === "GET_USAGE") {
@@ -174,11 +187,14 @@ async function runLookup(rawWord, source) {
 
   if (memModels.has(word)) {
     QP.analytics.track(EV.CACHED_LOOKUP, { source: source });
-    return okResult(memModels.get(word), {
-      cached: true,
-      multiword: norm.multiword,
-      usage: cap.usage
-    });
+    return withRatePrompt(
+      okResult(memModels.get(word), {
+        cached: true,
+        multiword: norm.multiword,
+        usage: cap.usage
+      }),
+      source
+    );
   }
 
   try {
@@ -186,7 +202,7 @@ async function runLookup(rawWord, source) {
     memModels.set(word, model);
     await addRecent(model);
     await trackLookup(source, { found: true, data: "api" });
-    return okResult(model, { multiword: norm.multiword, usage: cap.usage });
+    return withRatePrompt(okResult(model, { multiword: norm.multiword, usage: cap.usage }), source);
   } catch (err) {
     var kind = (err && err.kind) || "unknown";
 
@@ -201,11 +217,14 @@ async function runLookup(rawWord, source) {
         memModels.set(word, offline);
         await addRecent(offline);
         await trackLookup(source, { found: true, data: "offline" });
-        return okResult(offline, {
-          offline: true,
-          multiword: norm.multiword,
-          usage: cap.usage
-        });
+        return withRatePrompt(
+          okResult(offline, {
+            offline: true,
+            multiword: norm.multiword,
+            usage: cap.usage
+          }),
+          source
+        );
       }
       return { state: "error", kind: kind, word: word, usage: cap.usage };
     }
@@ -252,6 +271,23 @@ function okResult(model, extra) {
     multiword: !!extra.multiword,
     usage: extra.usage || null
   };
+}
+
+// Every successful lookup feeds the rating prompt's counters; only an on-page
+// card can carry the prompt itself (never the popup, whose sources all start
+// with "popup"). A failure here must never cost the user their result.
+async function withRatePrompt(result, source) {
+  try {
+    var canShow = String(source || "").indexOf("popup") !== 0;
+    var prompt = await QP.ratePrompt.onSuccessfulLookup({ canShow: canShow });
+    if (prompt) {
+      result.ratePrompt = prompt;
+      QP.analytics.track(EV.RATE_PROMPT_SHOWN, { variant: prompt.variant, source: source });
+    }
+  } catch (e) {
+    /* never block a lookup on the prompt */
+  }
+  return result;
 }
 
 async function addRecent(model) {

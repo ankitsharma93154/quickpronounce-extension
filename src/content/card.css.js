@@ -293,6 +293,36 @@
     ".qp-link:hover { text-decoration:underline; }",
     ".qp-brand { font-size:11px; color:var(--text-secondary); }",
 
+    /* ---- rating prompt: one quiet box above the footer, no entry animation ---- */
+    /* one paragraph whose last words are the two choices. The line height
+       leaves room for the "Rate it" pill, so its line sits no lower than the
+       others. */
+    ".qp-rate {",
+    "  margin:8px 14px 0; padding:8px 12px; border-radius:var(--radius-md);",
+    "  background:var(--tint-purple); font-size:12px; line-height:22px; color:var(--text-secondary);",
+    "  text-wrap:pretty;",
+    "}",
+    ".qp-card--roomy .qp-rate { margin:10px 20px 0; }",
+    ".qp-rate__actions { display:inline-flex; align-items:center; gap:2px; white-space:nowrap; vertical-align:middle; margin-left:2px; }",
+    ".qp-rate__go, .qp-rate__btn {",
+    "  height:20px; display:inline-flex; align-items:center; justify-content:center;",
+    "  border:0; background:transparent; cursor:pointer; font:inherit; font-size:12px; line-height:1.2;",
+    "  border-radius:var(--radius-pill);",
+    "  transition:background-color .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease;",
+    "}",
+    /* hover: tinted pills that fill in and lift slightly, no underlines */
+    /* the prompt's one real action: a soft tinted pill with a thin outline.
+       Noticeable by shape, not by colour weight, so it never competes with
+       the Play buttons. */
+    ".qp-rate__go {",
+    "  height:22px; padding:0 10px; color:var(--link); font-weight:700;",
+    "  background:rgba(var(--primary-rgb),0.14); border:1px solid rgba(var(--primary-rgb),0.35);",
+    "}",
+    ".qp-rate__go:hover { background:rgba(var(--primary-rgb),0.22); transform:translateY(-1px); }",
+    ".qp-rate__go:active { transform:translateY(0) scale(0.97); }",
+    ".qp-rate__btn { padding:0 8px; color:var(--text-secondary); font-weight:600; }",
+    ".qp-rate__btn:hover { background:rgba(var(--primary-rgb),0.08); color:var(--text-primary); }",
+
     ".qp-msg { padding:14px; font-size:13px; color:var(--text-primary); }",
     ".qp-msg__title { font-weight:600; margin-bottom:3px; }",
     ".qp-msg__sub { color:var(--text-secondary); }",
@@ -330,8 +360,8 @@
     ".qp-focusable:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }",
 
     "@media (prefers-reduced-motion: reduce) {",
-    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card { transition:none; }",
-    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active { transform:none; }",
+    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card, .qp-rate__go, .qp-rate__btn { transition:none; }",
+    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active, .qp-rate__go:hover, .qp-rate__go:active { transform:none; }",
     "  .qp-play__spin { animation-duration:1.4s; }",
     "  .qp-card, .qp-pill { animation:none; }",
     "  .qp-play.qp-play--playing .qp-play__ico { animation:none; }",

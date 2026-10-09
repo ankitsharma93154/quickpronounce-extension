@@ -12,6 +12,8 @@
  *   cap_hit               a lookup blocked by the daily limit
  *   recent_word_opened    a recent-words entry reopened from the popup
  *   popup_opened          the toolbar popup was opened
+ *   rate_prompt_shown     the card carried the rating prompt ({variant})
+ *   rate_prompt_action    the user answered it ({action: rate|later|dismiss})
  */
 (function () {
   var QP = (self.QP = self.QP || {});
@@ -23,7 +25,9 @@
     CACHED_LOOKUP: "cached_lookup",
     CAP_HIT: "cap_hit",
     RECENT_OPENED: "recent_word_opened",
-    POPUP_OPENED: "popup_opened"
+    POPUP_OPENED: "popup_opened",
+    RATE_PROMPT_SHOWN: "rate_prompt_shown",
+    RATE_PROMPT_ACTION: "rate_prompt_action"
   };
 
   async function track(event, props) {

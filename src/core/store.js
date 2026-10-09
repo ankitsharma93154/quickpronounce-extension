@@ -9,6 +9,8 @@
  *   capLedger        { <word>: firstLookupTs }  (rolling window, pruned on read)
  *   analyticsBuffer  [{ event, props, ts }]     (local only, ring buffer)
  *   installMeta      { installedAt, firstLookupDone }
+ *   ratePrompt       { seeded, fullHistory, activeDays, lookups, shows, nextAt, done }
+ *                    (rating prompt counters, see ratePrompt.js)
  *   installId        random UUID, generated once, sent as X-Install-Id so the
  *                    API can give this install its own fair daily quota
  *                    without an account or a shipped credential (api.js)
@@ -22,6 +24,7 @@
     CAP: "capLedger",
     ANALYTICS: "analyticsBuffer",
     META: "installMeta",
+    RATE_PROMPT: "ratePrompt",
     INSTALL_ID: "installId"
   };
 
@@ -128,6 +131,17 @@
     return next;
   }
 
+  async function getRatePrompt() {
+    var r = await get(KEYS.RATE_PROMPT);
+    return r && typeof r === "object" ? r : {};
+  }
+
+  async function setRatePrompt(state) {
+    var obj = {};
+    obj[KEYS.RATE_PROMPT] = state || {};
+    await set(obj);
+  }
+
   // Not a secret, not tied to any account — just a random label so the API
   // can meter this install's usage fairly instead of every install sharing
   // one budget. Generated once and reused for the life of the install.
@@ -155,6 +169,8 @@
     setAnalyticsBuffer: setAnalyticsBuffer,
     getMeta: getMeta,
     setMeta: setMeta,
+    getRatePrompt: getRatePrompt,
+    setRatePrompt: setRatePrompt,
     getInstallId: getInstallId
   };
 })();

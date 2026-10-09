@@ -203,6 +203,11 @@
         startLookup(lastWord, lastAnchorRect);
       },
       onClose: hide,
+      onRatePrompt: function (action) {
+        sendMessage({ type: "RATE_PROMPT", action: action }).catch(function () {
+          /* worker unreachable: the prompt simply comes back next time */
+        });
+      },
       openUrl: function (url) {
         try {
           window.open(url, "_blank", "noopener");
@@ -301,6 +306,11 @@
         settings.accent = settings.accent === "uk" ? "uk" : "us";
         settings.selectionButton = settings.selectionButton !== false;
         if (!settings.selectionButton && mode === "pill") hide();
+      }
+      // Rating prompt answered for good in another tab: drop it from this
+      // tab's open card too.
+      if (area === "local" && changes.ratePrompt && changes.ratePrompt.newValue && changes.ratePrompt.newValue.done) {
+        if (mode === "card" && stage && QP.card && QP.card.removeRatePrompt) QP.card.removeRatePrompt(stage);
       }
     });
   } catch (e) {

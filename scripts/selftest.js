@@ -62,7 +62,7 @@ function load(rel) {
   vm.runInContext(code, sandbox, { filename: rel });
 }
 
-["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js", "src/core/suggest.js"].forEach(load);
+["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js", "src/core/suggest.js", "src/core/ratePrompt.js"].forEach(load);
 
 const QP = sandbox.QP;
 
@@ -262,6 +262,72 @@ const QP = sandbox.QP;
       ["apple"]
     );
     eq("empty prefix matches from the start of the list", QP.suggest.pickPrefixMatches(list, "", 3), ["ace", "act", "action"]);
+  }
+
+  console.log("ratePrompt (engaged-user rating prompt):");
+  {
+    const RP = QP.ratePrompt;
+    const DAY = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const days = (n) => Array.from({ length: n }, (_, i) => RP.localDay(now - i * DAY));
+    const st = (o) => Object.assign({ seeded: true, fullHistory: false, activeDays: [], lookups: 0, shows: 0, nextAt: 0, done: false }, o);
+    const old = now - 8 * DAY;
+
+    ok("eligible: 8d old, 25 lookups, 4 days", RP.due(st({ lookups: 25, activeDays: days(4) }), old, now) === true);
+    ok("not eligible: installed 6 days ago", RP.due(st({ lookups: 25, activeDays: days(4) }), now - 6 * DAY, now) === false);
+    ok("not eligible: no installedAt", RP.due(st({ lookups: 25, activeDays: days(4) }), undefined, now) === false);
+    ok("not eligible: 24 lookups", RP.due(st({ lookups: 24, activeDays: days(4) }), old, now) === false);
+    ok("not eligible: 3 active days", RP.due(st({ lookups: 25, activeDays: days(3) }), old, now) === false);
+    ok("full history stands in for active days", RP.due(st({ lookups: 25, activeDays: days(1), fullHistory: true }), old, now) === true);
+    ok("full history still needs 25 lookups", RP.due(st({ lookups: 10, fullHistory: true }), old, now) === false);
+    ok("never after done", RP.due(st({ lookups: 99, activeDays: days(9), done: true }), old, now) === false);
+    ok("never after 2 shows", RP.due(st({ lookups: 99, activeDays: days(9), shows: 2 }), old, now) === false);
+    ok("not before nextAt", RP.due(st({ lookups: 99, activeDays: days(9), shows: 1, nextAt: now + DAY }), old, now) === false);
+
+    // seeding from the local analytics buffer
+    const ev = (event, props, ts) => ({ event, props, ts });
+    const seeded = RP.seedFrom([
+      ev("lookup", { found: true }, now),
+      ev("lookup", { found: true }, now - DAY),
+      ev("cached_lookup", {}, now - 2 * DAY),
+      ev("lookup", { found: false }, now - 3 * DAY),
+      ev("popup_opened", {}, now - 4 * DAY),
+      ev("cap_hit", {}, now - 5 * DAY)
+    ]);
+    eq("seed counts found + cached lookups only", seeded.lookups, 3);
+    eq("seed counts their distinct days", seeded.activeDays.length, 3);
+    ok("seed: short buffer is not full history", seeded.fullHistory === false && seeded.seeded === true);
+    const full = RP.seedFrom(Array.from({ length: QP.config.ANALYTICS_BUFFER_MAX }, () => ev("lookup", { found: true }, now)));
+    ok("seed: full buffer -> fullHistory", full.fullHistory === true && full.lookups === QP.config.ANALYTICS_BUFFER_MAX);
+
+    // full flow through storage
+    await QP.store.setMeta({ installedAt: old });
+    await QP.store.setRatePrompt(st({ lookups: 23, activeDays: days(4) }));
+    eq("24th lookup: no prompt yet", await RP.onSuccessfulLookup({ canShow: true }), null);
+    eq("popup lookup counts but never shows", await RP.onSuccessfulLookup({ canShow: false }), null);
+    eq("next on-page lookup: first variant", await RP.onSuccessfulLookup({ canShow: true }), { variant: "first" });
+    eq("right after: held back by the re-ask delay", await RP.onSuccessfulLookup({ canShow: true }), null);
+    await RP.respond("later");
+    ok("later does not end it", (await QP.store.getRatePrompt()).done === false);
+    await QP.store.setRatePrompt(Object.assign(await QP.store.getRatePrompt(), { nextAt: 0 }));
+    eq("after the delay: second variant", await RP.onSuccessfulLookup({ canShow: true }), { variant: "second" });
+    ok("second show alone does not set done (other tabs would pull it)", (await QP.store.getRatePrompt()).done === false);
+    await QP.store.setRatePrompt(Object.assign(await QP.store.getRatePrompt(), { nextAt: 0 }));
+    eq("never a third", await RP.onSuccessfulLookup({ canShow: true }), null);
+
+    await QP.store.setRatePrompt(st({ lookups: 99, activeDays: days(5) }));
+    await RP.respond("rate");
+    ok("rate ends it", (await QP.store.getRatePrompt()).done === true);
+    await QP.store.setRatePrompt(st({ lookups: 99, activeDays: days(5) }));
+    await RP.respond("dismiss");
+    ok("dismiss ends it", (await QP.store.getRatePrompt()).done === true);
+
+    // an install from before this feature: no ratePrompt key yet
+    delete storageData.ratePrompt;
+    await QP.store.setAnalyticsBuffer(Array.from({ length: 30 }, (_, i) => ev("lookup", { found: true }, now - (i % 5) * DAY)));
+    eq("unseeded install seeds lazily and qualifies", await RP.onSuccessfulLookup({ canShow: true }), { variant: "first" });
+    const after = await QP.store.getRatePrompt();
+    ok("lazy seed kept history (30 + this one)", after.seeded === true && after.lookups === 31 && after.activeDays.length === 5);
   }
 
   console.log("\n" + (failed ? failed + " FAILED, " : "") + passed + " passed");
