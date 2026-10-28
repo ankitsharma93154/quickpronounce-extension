@@ -50,8 +50,21 @@
     wordUrl: function (word) {
       return "https://www.quickpronounce.site/?word=" + encodeURIComponent(word);
     },
-    // Where "Rate it" on the card's rating prompt goes (see ratePrompt.js).
-    REVIEWS_URL: "https://chromewebstore.google.com/detail/kndljjhkhmmgpleahjpkpopafinkkajk/reviews",
+    // Where "Rate it" on the card's rating prompt goes (see ratePrompt.js):
+    // the store this copy was installed from. Store installs carry that
+    // store's update_url in their manifest; unpacked copies have none and
+    // fall back to Chrome.
+    REVIEWS_URL: (function () {
+      var updateUrl = "";
+      try {
+        updateUrl = chrome.runtime.getManifest().update_url || "";
+      } catch (e) {
+        // No extension context (e.g. the Node self-test).
+      }
+      return updateUrl.indexOf("edge.microsoft.com") !== -1
+        ? "https://microsoftedge.microsoft.com/addons/detail/cdofocmpfjicnombfglekognaaeppljl"
+        : "https://chromewebstore.google.com/detail/kndljjhkhmmgpleahjpkpopafinkkajk/reviews";
+    })(),
 
     // --- Behaviour -------------------------------------------------------
     REQUEST_TIMEOUT_MS: 8000,
