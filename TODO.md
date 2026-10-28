@@ -3,7 +3,51 @@
 Agreed work, not yet started. (Deferred or "maybe" ideas live in
 plusversion.md instead.)
 
-Nothing open right now.
+## Keep test installs out of the usage data
+
+**Status:** agreed 2026-10-09, not started. Do this in the next version,
+before running any browser test (scripts/e2e.js, puppeteer) against the live
+API again.
+
+**Why:** on 2026-10-09 the v1.0.4 browser test runs each launched a fresh
+Chrome profile, so each got a new random install id and hit the live API.
+That created 19 fake "new installs" in prod Redis (`ext:day:*`), which had to
+be deleted by hand before the nightly usage snapshot recorded them.
+
+**Plan (two halves):**
+- Extension: in store.js getInstallId, if the manifest has no `update_url`
+  (true for every unpacked copy, i.e. test browsers and manual "Load
+  unpacked"; store installs always have it), generate the id as
+  `test-<uuid>`. Store users are unaffected. The API's install-id check
+  (`/^[a-z0-9-]{20,64}$/i`) already accepts that shape.
+- quickpronounce_api: in lib/usageSnapshot.js readExtDays, skip install ids
+  starting with `test-`, so they never enter usage history, cohorts or
+  totals. Pushing it deploys the API.
+- Until both are live: don't run live-API browser tests, or count the test
+  installs they create and remove them before 6:30 AM IST (cron window).
+
+## Publish on Edge Add-ons
+
+**Status:** agreed 2026-10-26, Ankit doing it asap. Not started.
+
+**Why:** the extension already runs on Edge (MV3, no Chrome-only APIs per
+README), but it is only listed on the Chrome Web Store. Edge Add-ons is a
+second store with its own search, at almost no build cost. New installs are
+the current bottleneck (about 13 a day against roughly 3,300 daily website
+visitors), not retention.
+
+**Steps:**
+- Register in Microsoft Partner Center (Edge program, no fee) and submit the
+  same zip as the current Chrome version. Reuse store-listing/ copy, the
+  1280x800 screenshots and the privacy policy URL.
+- Rate prompt: config REVIEWS_URL links to the Chrome Web Store reviews page, which
+  is the wrong store for Edge installs. Point Edge installs to the Edge
+  listing's reviews (needs the Edge listing id, so after approval).
+- Website: the promo CTAs link to the Chrome Web Store. Once approved,
+  consider sending Edge browsers to the Edge listing.
+- Usage data: Edge installs share the same API and install-id scheme, so they
+  show up in the daily snapshots with no change. Store installs have an
+  `update_url`, so the planned `test-` id rule above still holds.
 
 ---
 

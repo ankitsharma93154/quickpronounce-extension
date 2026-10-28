@@ -13,6 +13,118 @@ the closest thing to a deferred-ideas list.
 
 ---
 
+## Paid tier ("QuickPronounce Plus"): draft plan
+
+**Status:** draft 2026-10-27, nothing built. Decided: (1) a higher
+daily limit is a paid benefit, the free cap stays at 40 new words per
+rolling 24h (src/core/cap.js); (2) Ankit prefers ONE Plus covering both
+the website and the extension over an extension-only tier. Ad-free is a
+familiar, accepted reason to pay (other sites and apps already sell it).
+
+**Usage at the time of writing:** about 470 store users, 70 to 80 active
+installs on weekdays, 30 to 40 on weekends, about 1 in 6 new installs
+still active 7 days later. About 6% of a day's active installs hit the
+cap, and it's mostly different people each day, so dozens of distinct
+people hit it per month.
+
+### What Plus would include: website (Pronounce_web)
+
+The website already gives a lot away free (saved words in localStorage,
+US/UK/AU/IN accents, the quiz path, the blog). Word pages and the blog
+bring the ~100K monthly visitors from search, so nothing indexed goes
+behind a paywall. Plus adds convenience, continuity and depth:
+- Ad-free. The easiest thing to sell and cheap to give: at about $7 RPM
+  one visitor's ads are worth cents a month.
+- Saved words and quiz progress synced across devices and with the
+  extension (today both live only in the browser; clearing it loses
+  them). This is the shared core of the combined Plus.
+- Practice built from your own saved / looked-up words (same feature as
+  the extension's, built once).
+- Longer sentence and paragraph audio, higher limits. Sentence and name
+  audio drove the October TTS cost doubling, so this ties the benefit to
+  real cost.
+- MP3 downloads, word lists, printable sheets (teachers, IELTS tutors;
+  possibly a later, higher teacher tier).
+- Record yourself and compare against the reference audio, in the
+  browser only, no AI scoring, no server cost.
+
+Stays free forever: every word page, IPA, audio in all accents, the blog,
+basic saved words on one device, the first quiz lessons. Don't paywall
+later quiz lessons while lesson 1 -> 2 still loses ~70% of starters.
+
+### What Plus would include: extension
+
+Core (the reason to pay monthly, built as one loop: look up, keep,
+practice):
+- Higher or no daily limit.
+- Saved words with full lookup history (today only the last 10 lookups
+  are kept, locally).
+- Practice on your own looked-up words: "you looked this up 3 days ago"
+  reminders first, spaced repetition later. Speakerly's whole paid tier
+  is this loop.
+
+Add-ons, if the core sells:
+- Extra accents (Indian, Australian, Canadian, Irish).
+- Playback controls (slow, repeat).
+- Export saved words to Anki / CSV.
+
+Stays free (these win installs and ratings): the lookup card itself,
+US and UK audio, IPA, respelling, "did you mean", color-coded vowels.
+
+Not in Plus yet: microphone scoring / AI feedback (costly to build and
+run, needs its own demand signal).
+
+### Prerequisites (why this is not a small build)
+- Accounts: saved words and paid status must survive a reinstall or a
+  second browser, so Plus needs sign-in. That moves "accounts" off the
+  README's do-not-build list.
+- Payments: the Chrome Web Store no longer handles payments, so it's our
+  own checkout (Razorpay, or a Stripe-based service such as ExtensionPay;
+  check India eligibility first) plus a server-side entitlement check
+  that the API enforces, not just the client cap.
+- Pricing in two bands: an India price and a global price (website
+  traffic is about 46% tier-1 countries; extension user geography not
+  checked yet).
+- One account and one entitlement shared by the website and the
+  extension (sign in once, Plus works in both).
+
+### How we find out if anyone wants it (in order, stop if a step fails)
+1. Website first, it reaches far more people: a "Go ad-free + sync your
+   saved words" waitlist link (near ads, on /saved, after a quiz
+   lesson). In parallel, on the extension: one line on the cap message, "Need more?
+   Join the list for QuickPronounce Plus", linking to a page on the
+   website. Clicks and sign-ups show up in the standard GA4 events
+   report; nothing new is collected inside the extension. Run 4 weeks.
+2. Show a price on that page (India and global), still email only. Watch
+   whether sign-ups hold once a number is visible.
+3. Founding-member pre-sale to the list: a discounted first year, paid
+   now, refunded if Plus doesn't ship. Real money is the only signal that
+   settles it.
+
+Draft go bar (revisit with real numbers): step 1 gets clicks from at
+least 10% of the people who see the cap message and 25+ sign-ups; step
+3 gets 10+ paid founding members. Below that, Plus waits and the effort
+goes into installs instead.
+
+### Realistic revenue (rough, for expectations only)
+Freemium utilities usually convert about 1 to 3% of active users.
+Assume a blended price of about $2.50/month across India and global.
+- Today (roughly 200 monthly actives): 2 to 6 payers, about $5 to
+  $15/month.
+- At 1,500 monthly actives: 15 to 45 payers, about $40 to $110/month.
+- At 10,000 monthly actives: 100 to 300 payers, about $250 to
+  $750/month.
+For comparison, website AdSense is about $1,500/month. An extension-only
+Plus is small money for a long while; it only becomes meaningful at much
+larger scale or as a combined website + extension Plus.
+
+Website side: content sites typically convert about 0.1 to 0.3% of
+monthly visitors. At ~100K/month that's roughly 100 to 300 subscribers,
+about $250 to $750/month, on top of the extension figures above.
+Meaningful next to AdSense, not a replacement for it.
+
+---
+
 ## Color-coded vowel sounds on the card
 
 **Status:** proposed 2026-09-28, not built. From looking at Blue Canoe
