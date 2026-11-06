@@ -46,8 +46,8 @@
     var ctx = {
       accent: accent,
       compact: true,
-      requestAudio: function (word, acc) {
-        return sendMessage({ type: "GET_AUDIO", word: word, accent: acc }).catch(function () {
+      requestAudio: function (word, acc, readingId) {
+        return sendMessage({ type: "GET_AUDIO", word: word, accent: acc, reading: readingId }).catch(function () {
           return { ok: false, kind: "network" };
         });
       },

@@ -31,12 +31,14 @@
       return "/ext/v1/dictionary/" + encodeURIComponent(word);
     },
     // GET /ext/v1/pronunciation/:word?accent=us|uk -> phonetics + syllables + one base64 mp3
-    pronunciationPath: function (word, accent) {
+    // readingId (optional): one heteronym reading's id, for that pronunciation.
+    pronunciationPath: function (word, accent, readingId) {
       return (
         "/ext/v1/pronunciation/" +
         encodeURIComponent(word) +
         "?accent=" +
-        encodeURIComponent(accent === "uk" ? "uk" : "us")
+        encodeURIComponent(accent === "uk" ? "uk" : "us") +
+        (readingId ? "&reading=" + encodeURIComponent(readingId) : "")
       );
     },
 

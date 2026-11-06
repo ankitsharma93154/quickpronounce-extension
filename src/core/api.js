@@ -8,10 +8,11 @@
  *     -> { word, entries[].definitions, phonetics:{us,uk}, syllables:{us,uk} }
  *        No audio. This fills the card.
  *
- *   GET /ext/v1/pronunciation/:word?accent=us|uk
+ *   GET /ext/v1/pronunciation/:word?accent=us|uk[&reading=<id>]
  *     -> { word, phonetics, syllables, audio:{ content:<base64>, format } }
  *        One synthesized MP3 for the requested accent. Fetched lazily, only
- *        when the user presses a play button.
+ *        when the user presses a play button. With `reading`, that heteronym
+ *        reading's pronunciation (see core/readings.js).
  *
  * Both take an `X-Install-Id` header (see store.js getInstallId) instead of
  * an API key - it identifies the install for a fair per-install quota, not a
@@ -23,7 +24,8 @@
   var QP = (self.QP = self.QP || {});
 
   // kind: not_found | timeout | network | rate_limited | bad_response |
-  //       server_error | unauthorized | unknown
+  //       server_error | unauthorized | reading_invalid |
+  //       reading_unavailable | unknown
   function ApiError(kind, message, extra) {
     this.name = "ApiError";
     this.kind = kind;
@@ -101,6 +103,14 @@
     }
     if (status >= 500) {
       throw new ApiError("server_error", (body && body.message) || "QuickPronounce had a problem.");
+    }
+    // A refused heteronym reading (lib/readingSelect.js in the API).
+    var code = body && body.code;
+    if (status === 422 && code === "reading_accent_unavailable") {
+      throw new ApiError("reading_unavailable", body.message || "This reading isn't available in this accent.");
+    }
+    if (status === 400 && (code === "invalid_reading" || code === "not_heteronym" || code === "unknown_reading")) {
+      throw new ApiError("reading_invalid", body.message || "That reading doesn't belong to this word.");
     }
     throw new ApiError("unknown", (body && body.message) || "Request failed (" + status + ").");
   }
@@ -214,6 +224,24 @@
 
     var ph = data.phonetics || {};
     var sy = data.syllables || {};
+
+    // Heteronyms only (null otherwise; see core/readings.js). Each reading gets
+    // its own senses, ranked exactly like the word-level ones.
+    var readings = QP.readings.valid(data);
+    var pick = function (indexes) {
+      return pickSenses(
+        indexes.map(function (i) {
+          return entries[i];
+        }),
+        data.defaultPartOfSpeech || null
+      );
+    };
+    if (readings) {
+      readings.forEach(function (r) {
+        r.senses = pick(r.entryIndexes);
+      });
+    }
+
     return {
       word: data.word,
       ipa: { us: ph.us || null, uk: ph.uk || null },
@@ -228,6 +256,8 @@
       senses: senses,
       definition: senses.length ? senses[0].definition : null,
       partOfSpeech: senses.length ? senses[0].pos : null,
+      readings: readings,
+      otherSenses: readings ? pick(QP.readings.otherEntryIndexes(entries.length, readings)) : [],
       found: true,
       // The API has no best-guess mode today. Field kept so the UI path
       // already exists when it does.
@@ -241,10 +271,14 @@
     return shapeDictionary(data);
   }
 
-  async function getAudio(word, accent) {
-    var data = await request(QP.config.pronunciationPath(word, accent));
+  async function getAudio(word, accent, readingId) {
+    var data = await request(QP.config.pronunciationPath(word, accent, readingId));
     if (!data.audio || !data.audio.content) {
       throw new ApiError("bad_response", "No audio was returned.");
+    }
+    // Never hand back a clip that isn't the reading that was asked for.
+    if (readingId && !(data.reading && data.reading.id === readingId)) {
+      throw new ApiError("bad_response", "The audio returned was for a different reading.");
     }
     return { base64: data.audio.content, format: data.audio.format || "mp3" };
   }

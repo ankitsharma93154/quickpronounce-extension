@@ -38,6 +38,7 @@
         "src/core/util.js",
         "src/core/config.js",
         "src/core/respell.js",
+        "src/core/readings.js",
         "src/core/normalize.js",
         "src/core/audioCache.js",
         "src/content/card.css.js",

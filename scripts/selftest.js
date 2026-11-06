@@ -62,7 +62,7 @@ function load(rel) {
   vm.runInContext(code, sandbox, { filename: rel });
 }
 
-["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/normalize.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js", "src/core/suggest.js", "src/core/ratePrompt.js"].forEach(load);
+["src/core/globals.js", "src/core/util.js", "src/core/config.js", "src/core/respell.js", "src/core/readings.js", "src/core/normalize.js", "src/core/audioCache.js", "src/core/store.js", "src/core/cap.js", "src/core/offlineData.js", "src/core/offlineCache.js", "src/core/api.js", "src/core/suggest.js", "src/core/ratePrompt.js"].forEach(load);
 
 const QP = sandbox.QP;
 
@@ -328,6 +328,131 @@ const QP = sandbox.QP;
     eq("unseeded install seeds lazily and qualifies", await RP.onSuccessfulLookup({ canShow: true }), { variant: "first" });
     const after = await QP.store.getRatePrompt();
     ok("lazy seed kept history (30 + this one)", after.seeded === true && after.lookups === 31 && after.activeDays.length === 5);
+  }
+
+  // Heteronym readings. The fixture is real /ext/v1/dictionary response data
+  // (dataset v5.1); fetch is a fake, nothing leaves this process.
+  console.log("\nreadings (validation):");
+  {
+    const R = QP.readings;
+    const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "readings-v5.1.json"), "utf8"));
+    const word = (w) => JSON.parse(JSON.stringify(fixture[w]));
+
+    for (const w of ["record", "belay", "laser", "cos", "lead"]) {
+      const rs = R.valid(word(w));
+      ok(w + ": accepted, default first, exactly one default", rs && rs[0].isDefault && rs.filter((r) => r.isDefault).length === 1);
+    }
+    eq("ordinary word -> null", R.valid(word("apple")), null);
+    eq("missing data -> null", R.valid(undefined), null);
+    {
+      const { isHeteronym, readings, ...old } = word("record");
+      eq("response without the fields -> null", R.valid(old), null);
+    }
+    const malformed = {
+      "isHeteronym not true": (d) => { d.isHeteronym = "true"; },
+      "one reading": (d) => { d.readings = d.readings.slice(0, 1); },
+      "readings not an array": (d) => { d.readings = "nope"; },
+      "bad id": (d) => { d.readings[1].id = "verb"; },
+      "duplicate id": (d) => { d.readings[1].id = d.readings[0].id; },
+      "no default": (d) => { d.readings[0].isDefault = false; },
+      "two defaults": (d) => { d.readings[1].isDefault = true; },
+      "missing phonetics": (d) => { delete d.readings[1].phonetics; },
+      "non-string IPA": (d) => { d.readings[1].phonetics.us = 5; },
+      "missing inherited": (d) => { delete d.readings[1].inherited; },
+      "null reading": (d) => { d.readings[1] = null; },
+      "entryIndexes out of range": (d) => { d.readings[1].entryIndexes = [99, -1, 1.5]; },
+      "entries missing": (d) => { delete d.entries; }
+    };
+    for (const name of Object.keys(malformed)) {
+      const d = word("record");
+      malformed[name](d);
+      eq("malformed (" + name + ") -> null", R.valid(d), null);
+    }
+    {
+      const d = word("record");
+      d.readings[0].entryIndexes = [0, 1, 42];
+      eq("out-of-range indexes dropped, valid kept", R.valid(d)[0].entryIndexes, [0, 1]);
+    }
+
+    console.log("\nreadings (accents and labels):");
+    const laser = R.valid(word("laser"));
+    const inheritedUs = laser.find((r) => r.inherited.us);
+    {
+      const v = R.forAccent(inheritedUs, "us");
+      ok("inherited accent: unavailable, no IPA or respelling", !v.available && v.ipa === null && v.syllables.length === 0 && v.respell === "");
+      const u = R.forAccent(inheritedUs, "uk");
+      ok("same reading in the other accent plays", u.available && u.ipa === inheritedUs.ipa.uk && u.syllableCount > 0);
+    }
+    eq("lead tabs", R.tabLabels(R.valid(word("lead")), "us"), ["lehd", "leed"]);
+    eq("record tabs US", R.tabLabels(R.valid(word("record")), "us"), ["REH-kerd", "rih-KAWRD"]);
+    eq("record tabs UK", R.tabLabels(R.valid(word("record")), "uk"), ["REH-kawd", "rih-KAWD"]);
+    eq("laser tabs US (other accent marked)", R.tabLabels(laser, "us"), ["LAY-zer", "LAY-suhr (UK)"]);
+    eq("belay tabs UK", R.tabLabels(R.valid(word("belay")), "uk"), ["BEE-lay", "BEE-lay (US)", "bih-LAY"]);
+    eq("cos tabs US (identical numbered)", R.tabLabels(R.valid(word("cos")), "us"), ["kahs", "kuhz 1", "kuhz 2"]);
+
+    console.log("\nreadings (model + audio requests, fake fetch):");
+    const calls = [];
+    let respond = null;
+    sandbox.crypto = require("crypto").webcrypto;
+    sandbox.AbortController = AbortController;
+    sandbox.setTimeout = setTimeout;
+    sandbox.clearTimeout = clearTimeout;
+    sandbox.fetch = async (url) => {
+      calls.push(url);
+      const { status, body } = respond(url);
+      return { status, json: async () => body, headers: { get: () => null } };
+    };
+    const okBody = (data) => ({ status: 200, body: { success: true, data } });
+    const pathOf = (u) => u.slice(QP.config.API_BASE.length);
+
+    respond = (u) => okBody(fixture[decodeURIComponent(u.split("/").pop())]);
+    const record = await QP.api.getDictionary("record");
+    eq("record: reading ids in order", record.readings.map((r) => r.id), word("record").readings.map((r) => r.id));
+    eq("record: noun reading's senses", record.readings[0].senses.map((s) => s.pos), ["Noun", "Adjective"]);
+    eq("record: verb reading's senses", record.readings[1].senses.map((s) => s.pos), ["Verb"]);
+    eq("record: surname goes to otherSenses", record.otherSenses.map((s) => s.pos), ["Name"]);
+    ok("record: word-level fields untouched", record.ipa.us === fixture.record.phonetics.us && record.senses.length > 0 && record.partOfSpeech === "Noun");
+    const apple = await QP.api.getDictionary("apple");
+    ok("ordinary word: readings null, otherSenses []", apple.readings === null && apple.otherSenses.length === 0);
+
+    respond = (u) => okBody({ reading: { id: "r-3f3a836454" }, audio: { content: "QUJD", format: "mp3" } });
+    calls.length = 0;
+    const clip = await QP.api.getAudio("record", "uk", "r-3f3a836454");
+    eq("reading audio URL", pathOf(calls[0]), "/ext/v1/pronunciation/record?accent=uk&reading=r-3f3a836454");
+    eq("reading audio returned", clip, { base64: "QUJD", format: "mp3" });
+    calls.length = 0;
+    await QP.api.getAudio("apple", "us");
+    eq("plain audio URL unchanged", pathOf(calls[0]), "/ext/v1/pronunciation/apple?accent=us");
+
+    const kindOf = async (fn) => {
+      try {
+        await fn();
+        return "no error";
+      } catch (e) {
+        return e.kind;
+      }
+    };
+    respond = () => okBody({ reading: { id: "r-0000000000" }, audio: { content: "QUJD" } });
+    eq("clip for a different reading is refused", await kindOf(() => QP.api.getAudio("record", "us", "r-3f3a836454")), "bad_response");
+    respond = () => okBody({ audio: { content: "QUJD" } });
+    eq("clip naming no reading is refused", await kindOf(() => QP.api.getAudio("record", "us", "r-3f3a836454")), "bad_response");
+    respond = () => ({ status: 422, body: { success: false, message: "x", code: "reading_accent_unavailable" } });
+    eq("422 -> reading_unavailable", await kindOf(() => QP.api.getAudio("laser", "us", "r-a52e0d97c5")), "reading_unavailable");
+    for (const code of ["invalid_reading", "not_heteronym", "unknown_reading"]) {
+      respond = () => ({ status: 400, body: { success: false, message: "x", code } });
+      eq("400 " + code + " -> reading_invalid", await kindOf(() => QP.api.getAudio("record", "us", "r-0000000000")), "reading_invalid");
+    }
+    respond = () => ({ status: 400, body: { success: false, message: "x" } });
+    eq("other 400 stays unknown", await kindOf(() => QP.api.getAudio("record", "us")), "unknown");
+
+    console.log("\nreadings (audio cache):");
+    const AC = QP.audioCache;
+    AC.put("record", "us", "PLAIN", "mp3");
+    AC.put("record", "us", "VERB", "mp3", "r-3f3a836454");
+    eq("plain clip keeps its key", AC.get("record", "us").base64, "PLAIN");
+    eq("reading clip separate", AC.get("record", "us", "r-3f3a836454").base64, "VERB");
+    ok("other reading not found", AC.get("record", "us", "r-c353b877a8") === null && !AC.has("record", "uk", "r-3f3a836454"));
+    AC.clear();
   }
 
   console.log("\n" + (failed ? failed + " FAILED, " : "") + passed + " passed");

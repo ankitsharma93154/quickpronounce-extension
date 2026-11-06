@@ -1,0 +1,1060 @@
+{
+ "record": {
+  "entries": [
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "An item of information put into a temporary or permanent physical medium.",
+     "Any instance of a physical medium on which information was put for the purpose of preserving it and making it available for future reference.",
+     "Ellipsis of phonograph record (“a disc, usually made from vinyl, on which sound is recorded and may be replayed on a phonograph”).",
+     "Ellipsis of phonograph record (“a disc, usually made from vinyl, on which sound is recorded and may be replayed on a phonograph”).",
+     "A music album; broadly, any music released as a single, EP, etc.",
+     "A set of data relating to a single individual or item.",
+     "A data structure similar to a struct, in some programming languages such as C and Java based on classes and designed for storing immutable data.",
+     "The most extreme known value of some variable, particularly that of an achievement in competitive events."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Adjective",
+    "definitions": [
+     "Enough to break previous records and set a new one; world-class; historic."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To make a record of information.",
+     "To make an audio or video recording of.",
+     "To give legal status to by making an official public record.",
+     "To fix in a medium, usually in a tangible medium.",
+     "To make an audio, video, or multimedia recording.",
+     "To repeat; to practice.",
+     "To sing or repeat a tune.",
+     "To reflect; to ponder."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Name",
+    "definitions": [
+     "A surname."
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/ˈɹɛk.ɚd/",
+   "uk": "/ˈɹɛk.ɔːd/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "reh",
+     "stress": 1
+    },
+    {
+     "text": "kerd",
+     "stress": 0
+    }
+   ],
+   "uk": [
+    {
+     "text": "reh",
+     "stress": 1
+    },
+    {
+     "text": "kawd",
+     "stress": 0
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": true,
+  "readings": [
+   {
+    "id": "r-c353b877a8",
+    "isDefault": true,
+    "phonetics": {
+     "us": "/ˈɹɛk.ɚd/",
+     "uk": "/ˈɹɛk.ɔːd/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "reh",
+       "stress": 1
+      },
+      {
+       "text": "kerd",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "reh",
+       "stress": 1
+      },
+      {
+       "text": "kawd",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈɹɛ",
+      "kɚd"
+     ],
+     "uk": [
+      "ˈɹɛ",
+      "kɔːd"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     0,
+     1
+    ],
+    "partsOfSpeech": [
+     "Noun",
+     "Adjective"
+    ]
+   },
+   {
+    "id": "r-3f3a836454",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/ɹɪˈkɔɹd/",
+     "uk": "/ɹɪˈkɔːd/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "rih",
+       "stress": 0
+      },
+      {
+       "text": "kawrd",
+       "stress": 1
+      }
+     ],
+     "uk": [
+      {
+       "text": "rih",
+       "stress": 0
+      },
+      {
+       "text": "kawd",
+       "stress": 1
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ɹɪ",
+      "ˈkɔɹd"
+     ],
+     "uk": [
+      "ɹɪ",
+      "ˈkɔːd"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     2
+    ],
+    "partsOfSpeech": [
+     "Verb"
+    ]
+   }
+  ],
+  "word": "record"
+ },
+ "belay": {
+  "entries": [
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To make (a rope) fast by turning it around a fastening point such as a cleat.",
+     "To handle a climbing rope to prevent (a climber) from falling to the ground.",
+     "To lay aside; to stop; to cancel.",
+     "The general command to stop or cease.",
+     "To surround; to environ; to enclose.",
+     "To overlay; to adorn.",
+     "To besiege; invest; surround.",
+     "To lie in wait for in order to attack; block up or obstruct."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "The securing of a rope to a rock or other sturdy object.",
+     "The object to which a rope is secured.",
+     "A location at which a climber stops and builds an anchor with which to secure their partner."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "simple past of belie (“encompass”)"
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/bɪˈleɪ/",
+   "uk": "/ˈbiːleɪ/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "bih",
+     "stress": 0
+    },
+    {
+     "text": "lay",
+     "stress": 1
+    }
+   ],
+   "uk": [
+    {
+     "text": "bee",
+     "stress": 1
+    },
+    {
+     "text": "lay",
+     "stress": 0
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": true,
+  "readings": [
+   {
+    "id": "r-2503a7719c",
+    "isDefault": true,
+    "phonetics": {
+     "us": "/bɪˈleɪ/",
+     "uk": "/ˈbiːleɪ/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "bih",
+       "stress": 0
+      },
+      {
+       "text": "lay",
+       "stress": 1
+      }
+     ],
+     "uk": [
+      {
+       "text": "bee",
+       "stress": 1
+      },
+      {
+       "text": "lay",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "bɪ",
+      "ˈleɪ"
+     ],
+     "uk": [
+      "ˈbiː",
+      "leɪ"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     0
+    ],
+    "partsOfSpeech": [
+     "Verb"
+    ]
+   },
+   {
+    "id": "r-0cc59b1d2b",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/ˈbiːleɪ/",
+     "uk": "/ˈbiːleɪ/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "bee",
+       "stress": 1
+      },
+      {
+       "text": "lay",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "bee",
+       "stress": 1
+      },
+      {
+       "text": "lay",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈbiː",
+      "leɪ"
+     ],
+     "uk": [
+      "ˈbiː",
+      "leɪ"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": true
+    },
+    "entryIndexes": [
+     1
+    ],
+    "partsOfSpeech": [
+     "Noun"
+    ]
+   },
+   {
+    "id": "r-616fed28c2",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/bɪˈleɪ/",
+     "uk": "/bɪˈleɪ/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "bih",
+       "stress": 0
+      },
+      {
+       "text": "lay",
+       "stress": 1
+      }
+     ],
+     "uk": [
+      {
+       "text": "bih",
+       "stress": 0
+      },
+      {
+       "text": "lay",
+       "stress": 1
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "bɪ",
+      "ˈleɪ"
+     ],
+     "uk": [
+      "bɪ",
+      "ˈleɪ"
+     ]
+    },
+    "inherited": {
+     "us": true,
+     "uk": false
+    },
+    "entryIndexes": [
+     2
+    ],
+    "partsOfSpeech": [
+     "Verb"
+    ]
+   }
+  ],
+  "word": "belay"
+ },
+ "laser": {
+  "entries": [
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A device that produces a monochromatic, coherent beam of light.",
+     "A beam of light produced by such a device; a laser beam.",
+     "A laser printer.",
+     "Ellipsis of laser hair removal."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To cut, destroy or treat with a laser.",
+     "To throw or kick with laser-like precision.",
+     "To point a laser at an aircraft, potentially disorienting the pilot or pilots."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A gum resin obtained from certain umbelliferous plants.",
+     "Such a plant."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "Acronym of light amplification by stimulated emission of radiation."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A simple type of dinghy"
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/ˈleɪzɚ/",
+   "uk": "/ˈleɪzə/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "lay",
+     "stress": 1
+    },
+    {
+     "text": "zer",
+     "stress": 0
+    }
+   ],
+   "uk": [
+    {
+     "text": "lay",
+     "stress": 1
+    },
+    {
+     "text": "zuh",
+     "stress": 0
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": true,
+  "readings": [
+   {
+    "id": "r-8c546d63d2",
+    "isDefault": true,
+    "phonetics": {
+     "us": "/ˈleɪzɚ/",
+     "uk": "/ˈleɪzə/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "lay",
+       "stress": 1
+      },
+      {
+       "text": "zer",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "lay",
+       "stress": 1
+      },
+      {
+       "text": "zuh",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈleɪ",
+      "zɚ"
+     ],
+     "uk": [
+      "ˈleɪ",
+      "zə"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     0,
+     1,
+     3,
+     4
+    ],
+    "partsOfSpeech": [
+     "Noun",
+     "Verb"
+    ]
+   },
+   {
+    "id": "r-a52e0d97c5",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/ˈleɪzɚ/",
+     "uk": "/ˈleɪs.əɹ/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "lay",
+       "stress": 1
+      },
+      {
+       "text": "zer",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "lay",
+       "stress": 1
+      },
+      {
+       "text": "suhr",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈleɪ",
+      "zɚ"
+     ],
+     "uk": [
+      "ˈleɪ",
+      "səɹ"
+     ]
+    },
+    "inherited": {
+     "us": true,
+     "uk": false
+    },
+    "entryIndexes": [
+     2
+    ],
+    "partsOfSpeech": [
+     "Noun"
+    ]
+   }
+  ],
+  "word": "laser"
+ },
+ "cos": {
+  "entries": [
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "Synonym of romaine lettuce, a long-leaved variety of lettuce."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Conjunction",
+    "definitions": [
+     "Informal spelling of 'cause (“because”)."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "Alternative form of coz, cousin."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "plural of co"
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Determiner",
+    "definitions": [
+     "Belonging to co. Gender-neutral possessive determiner, grammatically equivalent to the gendered his and her and the singular their."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "Alternative form of coss, a traditional Nepali unit of distance."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Name",
+    "definitions": [
+     "Initialism of Chamber of Secrets."
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/kɑs/",
+   "uk": "/kɒs/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "kahs",
+     "stress": 0
+    }
+   ],
+   "uk": [
+    {
+     "text": "kos",
+     "stress": 0
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": true,
+  "readings": [
+   {
+    "id": "r-70e6d69a21",
+    "isDefault": true,
+    "phonetics": {
+     "us": "/kɑs/",
+     "uk": "/kɒs/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "kahs",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "kos",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "kɑs"
+     ],
+     "uk": [
+      "kɒs"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     0,
+     3,
+     4,
+     5
+    ],
+    "partsOfSpeech": [
+     "Noun",
+     "Determiner"
+    ]
+   },
+   {
+    "id": "r-ad70fdf1ca",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/kʌz/",
+     "uk": "/kɒz/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "kuhz",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "koz",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "kʌz"
+     ],
+     "uk": [
+      "kɒz"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     1
+    ],
+    "partsOfSpeech": [
+     "Conjunction"
+    ]
+   },
+   {
+    "id": "r-fc1c0713b4",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/kʌz/",
+     "uk": "/kʌz/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "kuhz",
+       "stress": 0
+      }
+     ],
+     "uk": [
+      {
+       "text": "kuhz",
+       "stress": 0
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "kʌz"
+     ],
+     "uk": [
+      "kʌz"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     2
+    ],
+    "partsOfSpeech": [
+     "Noun"
+    ]
+   }
+  ],
+  "word": "cos"
+ },
+ "lead": {
+  "entries": [
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A heavy, pliable, inelastic metal element, having a bright, bluish color, but easily tarnished; both malleable and ductile, though with little tenacity. It is easily fusible, forms alloys with other metals, and is an ingredient of solder and type metal. Atomic number 82, symbol Pb (from Latin plumbum).",
+     "A plummet or mass of lead attached to a line, used in sounding depth at sea or to estimate velocity in knots.",
+     "A thin strip of type metal, used to separate lines of type in printing.",
+     "Vertical space in advance of a row or between rows of text. Also known as leading.",
+     "Sheets or plates of lead used as a covering for roofs.",
+     "A roof covered with lead sheets or terne plates.",
+     "A thin cylinder of graphite used in pencils.",
+     "Bullets; ammunition."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To cover, fill, or affect with lead.",
+     "To place leads between the lines of."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To guide or conduct.",
+     "To guide or conduct with the hand, or by means of some physical contact connection.",
+     "To guide or conduct.",
+     "To guide or conduct in a certain course, or to a certain place or end, by making the way known; to show the way, especially by going with or going in advance of; to guide somebody somewhere or to bring somebody somewhere by means of instructions.",
+     "To guide or conduct.",
+     "To direct; to counsel; to instruct.",
+     "To guide or conduct.",
+     "To conduct or direct with authority; to have direction or charge of; to command, especially a military or business unit."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "The act of leading or conducting; guidance; direction, course",
+     "Precedence; advance position; also, the measure of precedence; the state of being ahead in a race; the highest score in an incomplete game.",
+     "An insulated metallic wire for electrical devices and equipment.",
+     "The situation where a runner steps away from a base while waiting for the pitch to be thrown.",
+     "The act or right of playing first in a game or round; the card suit, or piece, so played",
+     "The main role in a play or film; the lead role.",
+     "The actor who plays the main role; lead actor.",
+     "The person in charge of a project or a work shift etc."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Adjective",
+    "definitions": [
+     "Foremost.",
+     "Main, principal, primary, first, chief, foremost."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "Misspelling of led."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Name",
+    "definitions": [
+     "A civil parish in North Yorkshire, England.",
+     "A city in Lawrence County, South Dakota, United States."
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/ˈlɛd/",
+   "uk": "/ˈlɛd/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "lehd",
+     "stress": 1
+    }
+   ],
+   "uk": [
+    {
+     "text": "lehd",
+     "stress": 1
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": true,
+  "readings": [
+   {
+    "id": "r-04deaa548b",
+    "isDefault": true,
+    "phonetics": {
+     "us": "/ˈlɛd/",
+     "uk": "/ˈlɛd/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "lehd",
+       "stress": 1
+      }
+     ],
+     "uk": [
+      {
+       "text": "lehd",
+       "stress": 1
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈlɛd"
+     ],
+     "uk": [
+      "ˈlɛd"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     0,
+     1
+    ],
+    "partsOfSpeech": [
+     "Noun",
+     "Verb"
+    ]
+   },
+   {
+    "id": "r-ee155673b7",
+    "isDefault": false,
+    "phonetics": {
+     "us": "/ˈliːd/",
+     "uk": "/ˈliːd/"
+    },
+    "syllables": {
+     "us": [
+      {
+       "text": "leed",
+       "stress": 1
+      }
+     ],
+     "uk": [
+      {
+       "text": "leed",
+       "stress": 1
+      }
+     ]
+    },
+    "ipaSyllables": {
+     "us": [
+      "ˈliːd"
+     ],
+     "uk": [
+      "ˈliːd"
+     ]
+    },
+    "inherited": {
+     "us": false,
+     "uk": false
+    },
+    "entryIndexes": [
+     2,
+     3,
+     4
+    ],
+    "partsOfSpeech": [
+     "Verb",
+     "Noun",
+     "Adjective"
+    ]
+   }
+  ],
+  "word": "lead"
+ },
+ "apple": {
+  "entries": [
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A common, firm, round fruit produced by a tree of the genus Malus.",
+     "The fruit of the tree Malus domestica, chiefly with a green, red, or yellow skin, cultivated in temperate climates for cidermaking, cooking, and eating.",
+     "A common, firm, round fruit produced by a tree of the genus Malus.",
+     "Often with a qualifying word: any fruit or vegetable, or any other thing (such as a cone or gall) produced by a plant, especially if from a tree and similar to the fruit of Malus domestica (noun sense 1.1).",
+     "A common, firm, round fruit produced by a tree of the genus Malus.",
+     "Something which resembles the fruit of Malus domestica (noun sense 1.1) in shape (such as a ball, breast, or globe) or colour.",
+     "A common, firm, round fruit produced by a tree of the genus Malus.",
+     "Something which resembles the fruit of Malus domestica (noun sense 1.1) in shape (such as a ball, breast, or globe) or colour."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Verb",
+    "definitions": [
+     "To make (something) appear like an apple (noun sense 1.1).",
+     "To become like an apple.",
+     "To collect fir-cones.",
+     "Of a flower bud or vegetable (especially a root vegetable): to grow into the shape of an apple."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Noun",
+    "definitions": [
+     "A computer produced by the company Apple Inc."
+    ],
+    "examples": []
+   },
+   {
+    "partOfSpeech": "Name",
+    "definitions": [
+     "Nickname for New York City: a major city in New York, United States; more commonly in the form the Big Apple.",
+     "A female given name from English.",
+     "A surname."
+    ],
+    "examples": []
+   }
+  ],
+  "defaultPartOfSpeech": "Noun",
+  "synonyms": [],
+  "antonyms": [],
+  "phonetics": {
+   "us": "/ˈæpəl/",
+   "uk": "/ˈæpəl/"
+  },
+  "syllables": {
+   "us": [
+    {
+     "text": "a",
+     "stress": 1
+    },
+    {
+     "text": "puhl",
+     "stress": 0
+    }
+   ],
+   "uk": [
+    {
+     "text": "a",
+     "stress": 1
+    },
+    {
+     "text": "puhl",
+     "stress": 0
+    }
+   ]
+  },
+  "variantOf": null,
+  "variantType": null,
+  "isHeteronym": false,
+  "readings": [],
+  "word": "apple"
+ }
+}

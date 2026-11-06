@@ -194,8 +194,8 @@
     currentCtx = {
       accent: settings.accent,
       compact: false,
-      requestAudio: function (word, accent) {
-        return sendMessage({ type: "GET_AUDIO", word: word, accent: accent }).catch(function () {
+      requestAudio: function (word, accent, readingId) {
+        return sendMessage({ type: "GET_AUDIO", word: word, accent: accent, reading: readingId }).catch(function () {
           return { ok: false, kind: "network" };
         });
       },

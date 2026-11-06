@@ -1,8 +1,8 @@
 /*
  * Per-document audio cache. Runs in page-ish contexts (content script, popup)
  * where lookups happen. Caches the raw base64 audio (+ format) the service
- * worker fetched, keyed by word+accent, so pressing a play button twice never
- * re-downloads.
+ * worker fetched, keyed by word+accent (plus the heteronym reading id, when
+ * there is one), so pressing a play button twice never re-downloads.
  *
  * This used to also build a Blob/object URL for local <audio> playback, but
  * playback now happens in the extension's offscreen document (see
@@ -18,22 +18,22 @@
 (function () {
   var QP = (self.QP = self.QP || {});
 
-  var cache = new Map(); // "word::accent" -> { base64, format }
+  var cache = new Map(); // "word::accent[::readingId]" -> { base64, format }
 
-  function key(word, accent) {
-    return word + "::" + (accent === "uk" ? "uk" : "us");
+  function key(word, accent, readingId) {
+    return word + "::" + (accent === "uk" ? "uk" : "us") + (readingId ? "::" + readingId : "");
   }
 
-  function put(word, accent, base64, format) {
-    cache.set(key(word, accent), { base64: base64, format: format || "audio/mpeg" });
+  function put(word, accent, base64, format, readingId) {
+    cache.set(key(word, accent, readingId), { base64: base64, format: format || "audio/mpeg" });
   }
 
-  function get(word, accent) {
-    return cache.get(key(word, accent)) || null;
+  function get(word, accent, readingId) {
+    return cache.get(key(word, accent, readingId)) || null;
   }
 
-  function has(word, accent) {
-    return cache.has(key(word, accent));
+  function has(word, accent, readingId) {
+    return cache.has(key(word, accent, readingId));
   }
 
   function clear() {

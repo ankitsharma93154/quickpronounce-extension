@@ -17,6 +17,7 @@ importScripts(
   "../core/util.js",
   "../core/config.js",
   "../core/respell.js",
+  "../core/readings.js",
   "../core/normalize.js",
   "../core/offlineData.js",
   "../core/offlineCache.js",
@@ -37,6 +38,7 @@ var CONTENT_FILES = [
   "src/core/util.js",
   "src/core/config.js",
   "src/core/respell.js",
+  "src/core/readings.js",
   "src/core/normalize.js",
   "src/core/audioCache.js",
   "src/content/card.css.js",
@@ -45,7 +47,7 @@ var CONTENT_FILES = [
 ];
 
 var memModels = new Map(); // word -> shaped dictionary model
-var memAudio = new Map(); // "word::accent" -> { base64, format }
+var memAudio = new Map(); // "word::accent[::readingId]" -> { base64, format }
 
 var OFFSCREEN_URL = "src/offscreen/offscreen.html";
 var playbackCounter = 0;
@@ -123,7 +125,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     return true; // async
   }
   if (msg.type === "GET_AUDIO") {
-    getAudio(msg.word, msg.accent).then(sendResponse);
+    getAudio(msg.word, msg.accent, msg.reading).then(sendResponse);
     return true;
   }
   if (msg.type === "RATE_PROMPT") {
@@ -253,6 +255,9 @@ function okResult(model, extra) {
       partOfSpeech: model.partOfSpeech || null,
       definition: model.definition || null,
       senses: Array.isArray(model.senses) ? model.senses : [],
+      // Heteronyms only; see core/readings.js. Offline copies have neither.
+      readings: Array.isArray(model.readings) ? model.readings : null,
+      otherSenses: Array.isArray(model.otherSenses) ? model.otherSenses : [],
       bestGuess: !!model.bestGuess,
       ipa: model.ipa || { us: null, uk: null },
       syllables: model.syllables || { us: [], uk: [] },
@@ -310,18 +315,19 @@ async function trackLookup(source, props) {
   QP.analytics.track(EV.LOOKUP, Object.assign({ source: source }, props || {}));
 }
 
-async function getAudio(word, accent) {
+async function getAudio(word, accent, readingId) {
   var norm = QP.normalize.normalizeWord(word);
   if (!norm.ok) return { ok: false, kind: "invalid" };
+  if (readingId != null && !QP.readings.isReadingId(readingId)) return { ok: false, kind: "reading_invalid" };
 
   var acc = accent === "uk" ? "uk" : "us";
-  var key = norm.word + "::" + acc;
+  var key = norm.word + "::" + acc + (readingId ? "::" + readingId : "");
 
   if (memAudio.has(key)) {
     return Object.assign({ ok: true, cached: true }, memAudio.get(key));
   }
   try {
-    var res = await QP.api.getAudio(norm.word, acc);
+    var res = await QP.api.getAudio(norm.word, acc, readingId || undefined);
     memAudio.set(key, res);
     return Object.assign({ ok: true }, res);
   } catch (err) {
