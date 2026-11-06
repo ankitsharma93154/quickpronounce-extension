@@ -54,25 +54,96 @@ later quiz lessons while lesson 1 -> 2 still loses ~70% of starters.
 
 ### What Plus would include: extension
 
+Free/Plus split agreed 2026-11-05, while reviewing two redesign mockups
+(see "Extension redesign: Free vs Plus split" below). Rule: free gets what
+costs almost nothing to serve and wins installs, ratings and store
+screenshots; Plus gets volume (TTS cost), continuity (needs accounts) and
+the habit loop.
+
 Core (the reason to pay monthly, built as one loop: look up, keep,
 practice):
 - Higher or no daily limit.
-- Saved words with full lookup history (today only the last 10 lookups
-  are kept, locally).
+- Saved words (the heart on the card) with full lookup history (today
+  only the last 10 lookups are kept, locally).
+- Sync with the website (saved words, history), which is what makes one
+  Plus cover both.
 - Practice on your own looked-up words: "you looked this up 3 days ago"
-  reminders first, spaced repetition later. Speakerly's whole paid tier
-  is this loop.
+  reminders first, spaced repetition later, plus streaks (they only mean
+  something with practice attached). Speakerly's whole paid tier is this
+  loop.
 
 Add-ons, if the core sells:
 - Extra accents (Indian, Australian, Canadian, Irish).
-- Playback controls (slow, repeat).
+- Loop / repeat playback. (Slow playback moved to free on 2026-11-05.)
 - Export saved words to Anki / CSV.
 
 Stays free (these win installs and ratings): the lookup card itself,
-US and UK audio, IPA, respelling, "did you mean", color-coded vowels.
+US and UK audio, IPA, respelling, "did you mean", color-coded vowels,
+stress bars, slow playback (0.75x / 0.5x), recent words, the welcome
+page, the cap screen.
 
 Not in Plus yet: microphone scoring / AI feedback (costly to build and
 run, needs its own demand signal).
+
+### Extension redesign: Free vs Plus split (agreed 2026-11-05)
+
+Source: two "QuickPronounce Extension Redesign" mockup PDFs. Not a full
+replacement; the brand gradient stays (the mockups' dark navy card was
+not adopted).
+
+Free, and the build list for the next version:
+- Stress bars: one bar per syllable, taller for the stressed beat, from
+  the existing `syllables[].stress` (0/1/2). Static at first; animating
+  them in time with the audio needs per-syllable timing we don't have.
+- Slow playback, 1x / 0.75x / 0.5x (playbackRate in the offscreen
+  player, no API or TTS cost; Google's own pronunciation box offers slow
+  for free).
+- A play button inside each US / UK row, replacing the separate Play US
+  / Play UK buttons. Full-width rows so the IPA never truncates (the
+  mockups' side-by-side Play tiles cut off long UK IPA). The user's
+  accent row gets a tinted fill instead of a "Your accent" badge.
+- The 1x / 0.75x / 0.5x speed control sits in the "Pronunciation" label
+  row (no extra height), on both the popup and the on-page card.
+- A "playing" state: the active play button swaps its speaker icon for
+  equalizer bars while audio plays.
+- Recent words keep their row layout (word + IPA) and gain a speaker
+  button that plays directly (replays of known words are already free
+  under cap.js). Not chips: chips drop the IPA.
+- A clear (x) button in the popup search box.
+- The on-page "Pronounce" pill shows the shortcut as a chip ("Alt P").
+  It must show the user's actual binding: content scripts can't read
+  chrome.commands, so ask the service worker for it; hide the chip if
+  no shortcut is set.
+- Part of speech appears once (the sense tabs), not also in the header.
+- A welcome page on fresh install (not on update): "Installed" badge,
+  headline with gradient text on "any word", checklist, a "try it here"
+  sentence using the real card style (gradient header, stress box, Play
+  tile), feature tiles. Pin step names Chrome or Edge to match the
+  browser. Open question: hand-written, fact-checked notes on the 4 demo
+  words, or no notes at all.
+- A proper cap screen: when the next lookup frees up, "Still playable"
+  recent words labelled "Replays are always free", and a Plus waitlist
+  link.
+- Options page polish: toggle switch, segmented accent picker, grouped
+  sections, diagnostics collapsed, a "Send feedback" link.
+
+Plus (planning only until accounts and payments exist): everything in
+the Core and Add-ons lists above.
+
+Rules:
+- No locked Plus teasers on the card (no padlocked heart etc.). Plus
+  shows up only on the cap screen, a "See Plus" row in options, and the
+  website. Keeps the card clean and the rating prompt running on
+  goodwill.
+- No cap number anywhere in the new screens (the 40/day stays hidden).
+
+Parked:
+- Word of the Day in the popup: free when built, not now
+  (wordofdayAPI already exists).
+- "Common slip" notes: no data source, each would need writing by hand
+  to the guide editorial rules (no calling accepted variants wrong). No
+  tier assigned.
+- The streak panel in the free popup (streaks live in Plus practice).
 
 ### Prerequisites (why this is not a small build)
 - Accounts: saved words and paid status must survive a reinstall or a
