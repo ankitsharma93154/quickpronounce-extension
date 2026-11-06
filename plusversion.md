@@ -100,8 +100,9 @@ Free, and the build list for the next version:
   for free).
 - A play button inside each US / UK row, replacing the separate Play US
   / Play UK buttons. Full-width rows so the IPA never truncates (the
-  mockups' side-by-side Play tiles cut off long UK IPA). The user's
-  accent row gets a tinted fill instead of a "Your accent" badge.
+  mockups' side-by-side Play tiles cut off long UK IPA). US and UK sit
+  in circles at the start of each row; the user's accent's circle is
+  filled with the brand gradient (no "Your accent" badge).
 - The 1x / 0.75x / 0.5x speed control sits in the "Pronunciation" label
   row (no extra height), on both the popup and the on-page card.
 - A "playing" state: the active play button swaps its speaker icon for

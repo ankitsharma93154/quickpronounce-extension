@@ -185,10 +185,18 @@
     return wrap;
   }
 
-  function accentRow(m, reading, a, featured, ctx) {
+  function accentRow(m, reading, a, featured, ctx, onPlay) {
     var view = accentView(m, reading, a);
     var row = el("div", "qp-pron-row");
-    row.appendChild(el("span", "qp-pron-row__accent", accentLabel(a)));
+    // The reader's own accent is the filled circle.
+    var mine = a === featured;
+    var tag = el("span", "qp-pron-row__accent" + (mine ? " qp-pron-row__accent--mine" : ""), accentLabel(a));
+    if (mine) {
+      tag.title = "Your accent";
+      tag.setAttribute("role", "img");
+      tag.setAttribute("aria-label", accentLabel(a) + ", your accent");
+    }
+    row.appendChild(tag);
 
     var main = el("div", "qp-pron-row__main");
     if (view.ipa) {
@@ -198,7 +206,6 @@
         el("span", "qp-pron-row__none", view.playable ? "Audio only" : "Not recorded for this meaning")
       );
     }
-    if (a === featured) main.appendChild(el("span", "qp-pron-row__mine", "Your accent"));
     row.appendChild(main);
 
     row.appendChild(
@@ -206,28 +213,43 @@
         icon: true,
         soft: a !== featured,
         readingId: reading ? reading.id : null,
-        unavailable: !view.playable
+        unavailable: !view.playable,
+        onPlay: function () {
+          onPlay(a);
+        }
       })
     );
     return row;
   }
 
   // Stress bars and both accents for one reading (null: the word itself). The
-  // reader's accent leads; the bars follow it, or the other accent when this
-  // reading has no pronunciation of its own there.
+  // reader's accent leads. The bars start on it and then follow whichever row
+  // was last played, because the two accents can stress different syllables
+  // (belay: UK /ˈbiːleɪ/, US /bɪˈleɪ/). An accent with no syllables of its own
+  // leaves the bars as they are.
   function fillPronunciation(wrap, m, reading, ctx) {
     clear(wrap);
     var featured = ctx.accent === "uk" ? "uk" : "us";
     var other = featured === "us" ? "uk" : "us";
 
-    var bars =
-      makeStressBars(accentView(m, reading, featured).syllables) ||
-      makeStressBars(accentView(m, reading, other).syllables);
-    if (bars) wrap.appendChild(bars);
+    var barsSlot = el("div", "qp-stress-slot");
+    var barsAccent = null;
+    function showBars(a) {
+      if (a === barsAccent) return;
+      var bars = makeStressBars(accentView(m, reading, a).syllables);
+      if (!bars) return;
+      clear(barsSlot);
+      barsSlot.appendChild(bars);
+      barsAccent = a;
+      notifyResize(ctx);
+    }
+    showBars(featured);
+    if (barsAccent === null) showBars(other);
+    wrap.appendChild(barsSlot);
 
     var pron = el("div", "qp-pron");
-    pron.appendChild(accentRow(m, reading, featured, featured, ctx));
-    pron.appendChild(accentRow(m, reading, other, featured, ctx));
+    pron.appendChild(accentRow(m, reading, featured, featured, ctx, showBars));
+    pron.appendChild(accentRow(m, reading, other, featured, ctx, showBars));
     wrap.appendChild(pron);
   }
 
@@ -664,6 +686,7 @@
   //   soft         tinted instead of the solid gradient (the other accent)
   //   readingId    play this heteronym reading; never falls back to plain audio
   //   unavailable  this reading has no pronunciation in this accent
+  //   onPlay       called when the user starts this button's audio
   function makePlayButton(word, accent, ctx, opts) {
     opts = opts || {};
     var readingId = opts.readingId || null;
@@ -736,6 +759,7 @@
         stopPlayback(ctx);
         return;
       }
+      if (opts.onPlay) opts.onPlay();
 
       // replay from cache if we already have the audio
       var cached = QP.audioCache.get(word, accent, readingId);

@@ -44,6 +44,8 @@
 
     // --- QuickPronounce site links --------------------------------------
     SITE_URL: "https://www.quickpronounce.site",
+    PLUS_URL: "https://www.quickpronounce.site/plus/extension",
+    CONTACT_URL: "https://www.quickpronounce.site/contact",
     // The extension's own policy, not the website's - different data
     // practices (see Pronounce_web/src/pages/ExtensionPrivacyPolicy.js).
     // Only resolves once that page is deployed.

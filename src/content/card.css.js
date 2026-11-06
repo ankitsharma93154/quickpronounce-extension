@@ -207,8 +207,12 @@
     ".qp-pron { margin-top:7px; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }",
     ".qp-pron-row { display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; }",
     ".qp-pron-row + .qp-pron-row { border-top:1px solid var(--border-color); }",
-    ".qp-pron-row__accent { flex:0 0 auto; width:22px; font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; }",
-    /* the badge wraps under a long IPA instead of cutting it off */
+    ".qp-pron-row__accent {",
+    "  flex:0 0 auto; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;",
+    "  border-radius:50%; border:1px solid var(--border-color); background:var(--bg-secondary);",
+    "  font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;",
+    "}",
+    ".qp-pron-row__accent--mine { border-color:transparent; background:var(--btn-primary-bg); background-color:var(--primary); color:#fff; }",
     ".qp-pron-row__main { flex:1 1 auto; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:3px 8px; }",
     ".qp-pron-row__ipa {",
     "  font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;",
@@ -216,10 +220,6 @@
     "  color:var(--text-primary); word-break:break-word;",
     "}",
     ".qp-pron-row__none { font-size:12px; color:var(--text-secondary); }",
-    ".qp-pron-row__mine {",
-    "  font-size:11px; font-weight:600; line-height:1.4; padding:1px 7px; white-space:nowrap;",
-    "  border-radius:var(--radius-pill); background:var(--border-primary-soft); color:var(--link);",
-    "}",
 
     /* ---- speed ---- */
     ".qp-pron-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; margin-top:9px; }",

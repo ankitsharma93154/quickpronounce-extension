@@ -96,56 +96,71 @@
     if (isDirty()) e.preventDefault();
   });
 
-  // --- keyboard shortcut -------------------------------------------------
+  // --- which browser, for the wording only --------------------------------
+  // Edge's user agent carries "Edg/"; everything else this ships on is Chrome.
+  var browserName = /\bEdg\//.test(navigator.userAgent) ? "Edge" : "Chrome";
+  $("op-browser-name").textContent = browserName;
+
+  // --- keyboard shortcut ----------------------------------------------------
   var shortcutEl = $("op-shortcut");
+  function showShortcut(shortcut) {
+    shortcutEl.innerHTML = "";
+    if (!shortcut) {
+      shortcutEl.textContent = "Not set";
+      return;
+    }
+    shortcut.split("+").forEach(function (key) {
+      var k = document.createElement("kbd");
+      k.textContent = key;
+      shortcutEl.appendChild(k);
+    });
+  }
   if (chrome.commands && chrome.commands.getAll) {
     chrome.commands.getAll(function (cmds) {
       var c = (cmds || []).find(function (x) {
         return x.name === "pronounce-selection";
       });
-      if (c && c.shortcut) {
-        shortcutEl.textContent = "Current: " + c.shortcut + " — pronounce the selected text";
-      } else {
-        shortcutEl.textContent = "No shortcut set yet. Click below to add one.";
-      }
+      showShortcut(c && c.shortcut);
     });
-  } else {
-    shortcutEl.textContent = "Manage shortcuts in chrome://extensions/shortcuts";
   }
   $("op-change-shortcut").addEventListener("click", function () {
     chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
   });
 
-  // --- recents --------------------------------------------------------
+  // --- recents --------------------------------------------------------------
   function refreshRecents() {
     QP.store.getRecents().then(function (list) {
       $("op-recents-count").textContent =
         list.length === 0
           ? "No recent words stored."
-          : list.length + (list.length === 1 ? " word stored locally." : " words stored locally.");
+          : list.length +
+            (list.length === 1 ? " word" : " words") +
+            " stored in this browser. Nothing here is synced or uploaded.";
+      $("op-clear-recents").disabled = list.length === 0;
     });
   }
   $("op-clear-recents").addEventListener("click", function () {
     QP.store.clearRecents().then(refreshRecents);
   });
 
-  // --- usage ---------------------------------------------------------
+  // --- usage: a count only, the limit itself is not advertised ---------------
   function refreshUsage() {
     sendMessage({ type: "GET_USAGE" }).then(function (u) {
       if (!u) {
-        $("op-usage").textContent = "—";
+        $("op-usage").textContent = "Usage isn't available right now.";
         return;
       }
-      var txt = u.used + " word" + (u.used === 1 ? "" : "s") + " looked up in the last 24 hours";
-      if (u.resetsAt) txt += " · oldest resets in ~" + QP.util.hoursUntil(u.resetsAt) + "h";
-      $("op-usage").textContent = txt;
+      $("op-usage").textContent =
+        u.used + (u.used === 1 ? " word" : " words") + " looked up in the last 24 hours";
+      var hint = "Words you've already looked up still replay for free.";
+      if (u.remaining === 0 && u.resetsAt) {
+        hint = "Your next lookup frees up in about " + QP.util.hoursUntil(u.resetsAt) + " hours. " + hint;
+      }
+      $("op-usage-hint").textContent = hint;
     });
   }
-  $("op-reset-usage").addEventListener("click", function () {
-    QP.store.setCapLedger({}).then(refreshUsage);
-  });
 
-  // --- diagnostics -------------------------------------------------
+  // --- diagnostics ----------------------------------------------------------
   function refreshDiag() {
     QP.analytics.summary().then(function (sum) {
       var lines = [];
@@ -179,9 +194,13 @@
     QP.analytics.clear().then(refreshDiag);
   });
 
-  // --- links ------------------------------------------------------
+  // --- links and version ----------------------------------------------------
   $("op-site").href = QP.config.SITE_URL;
   $("op-privacy").href = QP.config.PRIVACY_URL;
+  $("op-plus").href = QP.config.PLUS_URL;
+  $("op-feedback").href = QP.config.CONTACT_URL;
+  $("op-version").textContent =
+    "QuickPronounce for " + browserName + " \u00b7 v" + chrome.runtime.getManifest().version;
 
   refreshRecents();
   refreshUsage();
