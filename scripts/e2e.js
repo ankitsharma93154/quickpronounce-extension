@@ -567,7 +567,7 @@ async function waitFor(fn, timeoutMs, intervalMs) {
       throw new Error(`no result card. pageerrors=[${perr.join("|")}] result="${txt.slice(0, 160)}"`);
     }
     await pop.waitForFunction(
-      () => Array.from(document.querySelectorAll(".pp-recent b")).some((b) => b.textContent === "espresso"),
+      () => Array.from(document.querySelectorAll(".qp-rchip__word")).some((b) => b.textContent === "espresso"),
       { timeout: 4000 }
     );
     const usage = await pop.$eval("#pp-usage", (e) => e.textContent).catch(() => "");

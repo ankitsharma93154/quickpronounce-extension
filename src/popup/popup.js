@@ -42,6 +42,19 @@
 
   var activeCardCtx = null;
 
+  // Recent chips play outside any card, so they keep their own context.
+  var recentsCtx = {
+    get accent() {
+      return accent;
+    },
+    compact: true,
+    requestAudio: function (word, acc, readingId) {
+      return sendMessage({ type: "GET_AUDIO", word: word, accent: acc, reading: readingId }).catch(function () {
+        return { ok: false, kind: "network" };
+      });
+    }
+  };
+
   function cardCtx() {
     var ctx = {
       accent: accent,
@@ -68,6 +81,9 @@
 
   function showView(view) {
     if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
+    QP.card.stopPlayback(recentsCtx);
+    // At the cap, the list below the card is what can still be played.
+    $("pp-recents-title").textContent = view.state === "cap" ? "Still playable, free" : "Recent";
     result.hidden = false;
     activeCardCtx = cardCtx();
     QP.card.render(result, view, activeCardCtx);
@@ -78,6 +94,7 @@
   // popup closes - stop it explicitly.
   window.addEventListener("pagehide", function () {
     if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
+    QP.card.stopPlayback(recentsCtx);
   });
 
   function doLookup(raw, source) {
@@ -143,7 +160,7 @@
       rest.textContent = word.slice(suggestQuery.length);
       btn.appendChild(typed);
       btn.appendChild(rest);
-      // Plain click, same as .pp-recent and every other button in this
+      // Plain click, same as the recent chips and every other button in this
       // popup - nothing here hides the dropdown on blur, so there is no
       // input-blur race to dodge with a mousedown+preventDefault trick.
       btn.addEventListener("click", function () {
@@ -229,6 +246,7 @@
 
   function refreshRecents() {
     QP.store.getRecents().then(function (list) {
+      QP.card.stopPlayback(recentsCtx);
       recentsList.innerHTML = "";
       if (!list.length) {
         recentsEmpty.hidden = false;
@@ -236,24 +254,13 @@
       }
       recentsEmpty.hidden = true;
       list.forEach(function (item) {
-        var li = document.createElement("li");
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pp-recent";
-        var b = document.createElement("b");
-        b.textContent = item.word;
-        var sub = document.createElement("span");
-        var ipa = item.ipa && (accent === "uk" ? item.ipa.uk : item.ipa.us);
-        sub.textContent = ipa || item.definition || "";
-        btn.appendChild(b);
-        btn.appendChild(sub);
-        btn.addEventListener("click", function () {
-          QP.analytics.track(QP.analytics.EVENTS.RECENT_OPENED, { word: item.word });
-          input.value = item.word;
-          doLookup(item.word, "popup_recent");
-        });
-        li.appendChild(btn);
-        recentsList.appendChild(li);
+        recentsList.appendChild(
+          QP.card.makeRecentChip(item, accent, recentsCtx, function () {
+            QP.analytics.track(QP.analytics.EVENTS.RECENT_OPENED, { word: item.word });
+            input.value = item.word;
+            doLookup(item.word, "popup_recent");
+          })
+        );
       });
     });
   }

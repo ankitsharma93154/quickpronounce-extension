@@ -185,7 +185,7 @@ async function runLookup(rawWord, source) {
   var cap = await QP.cap.record(word);
   if (!cap.allowed) {
     QP.analytics.track(EV.CAP_HIT, { source: source });
-    return { state: "cap", word: word, usage: cap.usage };
+    return { state: "cap", word: word, usage: cap.usage, recents: await QP.store.getRecents() };
   }
 
   if (memModels.has(word)) {
@@ -303,6 +303,12 @@ async function addRecent(model) {
     syllables: model.syllables,
     definition: model.definition,
     partOfSpeech: model.partOfSpeech,
+    // Heteronyms: replaying from Recent must play the default reading, not
+    // plain audio where the voice picks a pronunciation.
+    defaultReading:
+      model.readings && model.readings[0]
+        ? { id: model.readings[0].id, inherited: model.readings[0].inherited }
+        : null,
     ts: Date.now()
   });
 }

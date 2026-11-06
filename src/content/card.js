@@ -8,7 +8,7 @@
  *     { kind: "loading", word }
  *     | { state: "ok", model, cached, offline, multiword, usage, ratePrompt? }
  *     | { state: "not_found", word }
- *     | { state: "cap", usage }
+ *     | { state: "cap", word, usage, recents }
  *     | { state: "error", kind, retryAfter, word }
  *     | { state: "invalid" }
  *   ctx:
@@ -811,9 +811,9 @@
   }
 
   function resetOthers(ctx, keepBtn) {
-    var card = keepBtn.closest(".qp-card");
-    if (!card) return;
-    Array.prototype.forEach.call(card.querySelectorAll("button"), function (b) {
+    var scope = keepBtn.closest(".qp-card, .qp-rchips");
+    if (!scope) return;
+    Array.prototype.forEach.call(scope.querySelectorAll("button"), function (b) {
       if (b !== keepBtn && typeof b._qpReset === "function") b._qpReset();
     });
   }
@@ -859,6 +859,113 @@
     root.appendChild(card);
   }
 
+  // One recent word as a chip: its play button, then the word. Playing costs no
+  // lookup. onOpen (optional) makes the word open its full card.
+  function makeRecentChip(item, accent, ctx, onOpen) {
+    var a = accent === "uk" ? "uk" : "us";
+    var reading = item.defaultReading || null;
+    var chip = el("li", "qp-rchip");
+    chip.appendChild(
+      makePlayButton(item.word, a, ctx, {
+        icon: true,
+        soft: true,
+        readingId: reading ? reading.id : null,
+        unavailable: !!(reading && reading.inherited && reading.inherited[a])
+      })
+    );
+    if (onOpen) {
+      var open = el("button", "qp-rchip__word qp-rchip__word--open qp-focusable", item.word);
+      open.type = "button";
+      open.addEventListener("click", onOpen);
+      chip.appendChild(open);
+    } else {
+      chip.appendChild(el("span", "qp-rchip__word", item.word));
+    }
+    return chip;
+  }
+
+  // "2h 41m" / "41m" / "1m"; never "0m" while something is still counting down.
+  function formatWait(ms) {
+    var minutes = Math.max(1, Math.ceil(ms / 60000));
+    var hours = Math.floor(minutes / 60);
+    return hours ? hours + "h " + (minutes % 60) + "m" : minutes + "m";
+  }
+
+  // Lookups come back one at a time as each ages out of the rolling window, so
+  // the ring shows how far the next one has come. The limit itself is not shown.
+  function makeRecharge(resetsAt) {
+    var wrap = el("div", "qp-recharge");
+    var left = Math.max(0, resetsAt - Date.now());
+    var windowMs = QP.config.CAP_WINDOW_MS;
+    var circumference = 2 * Math.PI * 52;
+    var done = Math.min(1, Math.max(0, 1 - left / windowMs));
+    wrap.innerHTML =
+      '<svg class="qp-recharge__ring" viewBox="0 0 120 120" aria-hidden="true">' +
+      '<circle class="qp-recharge__track" cx="60" cy="60" r="52"></circle>' +
+      '<circle class="qp-recharge__fill" cx="60" cy="60" r="52" stroke-dasharray="' +
+      (circumference * done).toFixed(1) + " " + circumference.toFixed(1) +
+      '"></circle></svg>';
+    var text = el("div", "qp-recharge__text");
+    text.appendChild(el("div", "qp-recharge__time", formatWait(left)));
+    text.appendChild(el("div", "qp-recharge__sub", "until your next lookup"));
+    wrap.appendChild(text);
+    return wrap;
+  }
+
+  function renderCap(root, view, ctx) {
+    var usage = view.usage || {};
+    var card = el("div", cardClass(ctx));
+    card.appendChild(el("div", "qp-card__bar"));
+    var body = el("div", "qp-cap");
+
+    if (usage.resetsAt) body.appendChild(makeRecharge(usage.resetsAt));
+    body.appendChild(el("div", "qp-cap__title", "Your lookups are recharging"));
+    body.appendChild(
+      el("div", "qp-cap__sub", "You've used all your free lookups for now. They come back one at a time over 24 hours.")
+    );
+
+    var plus = el("button", "qp-cap__cta qp-focusable", "Join the Plus waitlist");
+    plus.type = "button";
+    plus.addEventListener("click", function () {
+      ctx.openUrl(QP.config.PLUS_URL);
+    });
+    body.appendChild(plus);
+
+    var siteUrl = view.word ? QP.config.wordUrl(view.word) : QP.config.SITE_URL;
+    var site = el("a", "qp-link qp-cap__site qp-focusable", "Or look it up on quickpronounce.site");
+    site.href = siteUrl;
+    site.addEventListener("click", function (e) {
+      e.preventDefault();
+      ctx.openUrl(siteUrl);
+    });
+    body.appendChild(site);
+    card.appendChild(body);
+
+    // The popup has its own Recent list right below the card.
+    var recents = !ctx.compact && Array.isArray(view.recents) ? view.recents.slice(0, 4) : [];
+    if (recents.length) {
+      var still = el("div", "qp-cap__still");
+      still.appendChild(el("div", "qp-label", "Still playable, free"));
+      var list = el("ul", "qp-rchips");
+      recents.forEach(function (item) {
+        list.appendChild(makeRecentChip(item, ctx.accent, ctx));
+      });
+      still.appendChild(list);
+      card.appendChild(still);
+    }
+
+    if (!ctx.compact) {
+      var foot = el("div", "qp-foot");
+      var close = el("button", "qp-link qp-focusable", "Dismiss");
+      close.type = "button";
+      close.addEventListener("click", ctx.onClose);
+      foot.appendChild(close);
+      foot.appendChild(el("span", "qp-brand", "QuickPronounce"));
+      card.appendChild(foot);
+    }
+    root.appendChild(card);
+  }
+
   function render(root, view, ctx) {
     clear(root);
     ctx = ctx || {};
@@ -877,21 +984,7 @@
       case "not_found":
         return renderNotFound(root, view, ctx);
       case "cap":
-        return renderMessage(
-          root,
-          {
-            title: "You've reached today's lookup limit.",
-            sub:
-              "That's " +
-              (view.usage ? view.usage.limit : QP.config.DAILY_UNIQUE_WORD_LIMIT) +
-              " new words in 24 hours. Words you've already looked up still play" +
-              (view.usage && view.usage.resetsAt
-                ? ". Resets in about " + QP.util.hoursUntil(view.usage.resetsAt) + "h."
-                : "."),
-            link: { text: "Open QuickPronounce", url: QP.config.SITE_URL }
-          },
-          ctx
-        );
+        return renderCap(root, view, ctx);
       case "invalid":
         return renderMessage(
           root,
@@ -941,5 +1034,10 @@
     }
   }
 
-  QP.card = { render: render, stopPlayback: stopPlayback, removeRatePrompt: removeRatePrompt };
+  QP.card = {
+    render: render,
+    stopPlayback: stopPlayback,
+    removeRatePrompt: removeRatePrompt,
+    makeRecentChip: makeRecentChip
+  };
 })();
