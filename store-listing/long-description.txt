@@ -2,9 +2,9 @@ Pronounce any word while you read.
 
 QuickPronounce is a pronunciation dictionary that works on any page. Select a word and a small card shows you:
 • IPA transcription for US and UK English
-• a plain English respelling, like "pruh·NUN·see·AY·shun"
-• the syllable breakdown with stress marked
-• US and UK pronunciation audio
+• the syllables in plain English, with bars showing which one to stress
+• US and UK pronunciation audio, at normal or slower speed
+• both pronunciations of words that change with meaning, like "record"
 • short definitions
 • a link to the full entry on quickpronounce.site
 
@@ -22,8 +22,9 @@ THREE WAYS TO USE IT
 • Set a keyboard shortcut and pronounce the current selection instantly.
 
 The toolbar popup lets you type a word to look up directly and see your last
-10 lookups. Not sure how to pronounce a word you just met in an article?
-Select it and hear it, without opening a new tab.
+10 lookups, ready to replay. Choose a light or dark theme in Settings. Not
+sure how to pronounce a word you just met in an article? Select it and hear
+it, without opening a new tab.
 
 PRIVACY
 QuickPronounce only ever sends the single word you explicitly ask about.
