@@ -107,21 +107,20 @@ Free, and the build list for the next version:
   row (no extra height), on both the popup and the on-page card.
 - A "playing" state: the active play button swaps its speaker icon for
   equalizer bars while audio plays.
-- Recent words keep their row layout (word + IPA) and gain a speaker
-  button that plays directly (replays of known words are already free
-  under cap.js). Not chips: chips drop the IPA.
+- Recent words as chips (play button + word) that play directly, in the
+  popup and on the cap screen. Playing makes no lookup. Rows with IPA
+  were built and compared on 2026-11-06; chips won because they keep the
+  popup compact.
 - A clear (x) button in the popup search box.
-- The on-page "Pronounce" pill shows the shortcut as a chip ("Alt P").
-  It must show the user's actual binding: content scripts can't read
-  chrome.commands, so ask the service worker for it; hide the chip if
-  no shortcut is set.
 - Part of speech appears once (the sense tabs), not also in the header.
+- Not doing: a shortcut chip ("Alt P") on the on-page "Pronounce" pill.
+  Built and compared on 2026-11-06, removed by choice.
 - A welcome page on fresh install (not on update): "Installed" badge,
   headline with gradient text on "any word", checklist, a "try it here"
   sentence using the real card style (gradient header, stress box, Play
   tile), feature tiles. Pin step names Chrome or Edge to match the
-  browser. Open question: hand-written, fact-checked notes on the 4 demo
-  words, or no notes at all.
+  browser. Hand-written, fact-checked notes on the 4 demo words only, and
+  their audio clips are bundled so the demo makes no API calls.
 - A proper cap screen: when the next lookup frees up, "Still playable"
   recent words labelled "Replays are always free", and a Plus waitlist
   link.

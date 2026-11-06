@@ -94,9 +94,28 @@ body {
 .pp-icon-btn svg { width: 17px; height: 17px; }
 
 .pp-search { display: flex; gap: 6px; }
+.pp-input-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
+.pp-clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  padding: 4px;
+  display: flex;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.pp-clear:hover { background: var(--border-color); color: var(--text-primary); }
+.pp-clear svg { width: 100%; height: 100%; }
 .pp-input {
-  flex: 1 1 auto;
-  padding: 8px 10px;
+  display: block;
+  width: 100%;
+  padding: 8px 32px 8px 10px;
   font-size: 14px;
   color: var(--text-primary);
   background: var(--bg-secondary);

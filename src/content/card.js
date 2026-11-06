@@ -35,6 +35,9 @@
     '<path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path>' +
     '<path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>';
 
+  var EQUALIZER =
+    '<span class="qp-eq" aria-hidden="true"><span></span><span></span><span></span></span>';
+
   var AUDIO_TIMEOUT_MS = 12000;
   // Every real sense is still in the data (pickSenses in api.js does not cut
   // anything) - this only bounds how many tabs the inline Meaning header
@@ -285,9 +288,10 @@
   }
 
   // The "Meaning" heading, part-of-speech tabs and definitions for one list of
-  // senses. Each tab swaps the definition and the hero's pos line in place;
+  // senses. These tabs are the only place the part of speech appears, so a word
+  // with one sense still gets its label. Each tab swaps the definition in place;
   // nothing is re-fetched, every sense came back with the original lookup.
-  function fillSenses(wrap, senses, posLine, ctx) {
+  function fillSenses(wrap, senses, ctx) {
     clear(wrap);
     if (!senses.length) return;
 
@@ -311,7 +315,6 @@
           meaning.classList.add("qp-meaning--fading");
           setTimeout(function () {
             fillMeaning(meaning, s);
-            posLine.textContent = s.pos || "";
             meaning.classList.remove("qp-meaning--fading");
             notifyResize(ctx);
           }, 120);
@@ -319,6 +322,10 @@
         senseRow.appendChild(tab);
       });
       head.appendChild(senseRow);
+    } else if (senses[0].pos) {
+      var onlyRow = el("div", "qp-senses");
+      onlyRow.appendChild(el("span", "qp-sense qp-sense--active qp-sense--only", senses[0].pos));
+      head.appendChild(onlyRow);
     }
     wrap.appendChild(head);
     fillMeaning(meaning, senses[0]);
@@ -372,9 +379,6 @@
     var heroLink = el("a", "qp-hero__link qp-focusable-light");
     heroLink.href = m.url;
     heroLink.appendChild(el("div", "qp-hero__word", m.word));
-    // .qp-hero__pos collapses itself via :empty when there is no label.
-    var posLine = el("div", "qp-hero__pos", (senses[0] && senses[0].pos) || "");
-    heroLink.appendChild(posLine);
     heroLink.addEventListener("click", function (e) {
       e.preventDefault();
       ctx.openUrl(m.url);
@@ -421,9 +425,7 @@
 
     function showReading(reading) {
       fillPronunciation(pronWrap, m, reading, ctx);
-      var readingSenses = reading ? reading.senses || [] : senses;
-      posLine.textContent = (readingSenses[0] && readingSenses[0].pos) || "";
-      fillSenses(sensesWrap, readingSenses, posLine, ctx);
+      fillSenses(sensesWrap, reading ? reading.senses || [] : senses, ctx);
     }
 
     if (readings) {
@@ -725,7 +727,7 @@
     function setPlaying() {
       btn.disabled = false;
       btn.className = base + " qp-play--playing";
-      btn.innerHTML = SPEAKER + btnText;
+      btn.innerHTML = EQUALIZER + btnText;
     }
     function setError(msg) {
       btn.disabled = false;
@@ -945,7 +947,10 @@
     var recents = !ctx.compact && Array.isArray(view.recents) ? view.recents.slice(0, 4) : [];
     if (recents.length) {
       var still = el("div", "qp-cap__still");
-      still.appendChild(el("div", "qp-label", "Still playable, free"));
+      var stillHead = el("div", "qp-cap__still-head");
+      stillHead.appendChild(el("div", "qp-label", "Still playable"));
+      stillHead.appendChild(el("span", "qp-cap__still-note", "Replays are always free"));
+      still.appendChild(stillHead);
       var list = el("ul", "qp-rchips");
       recents.forEach(function (item) {
         list.appendChild(makeRecentChip(item, ctx.accent, ctx));

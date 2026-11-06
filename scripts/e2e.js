@@ -462,7 +462,7 @@ async function waitFor(fn, timeoutMs, intervalMs) {
     );
     const before = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-      return { pos: sr.querySelector(".qp-hero__pos").textContent, def: sr.querySelector(".qp-meaning").textContent };
+      return { pos: sr.querySelector(".qp-sense--active").textContent, def: sr.querySelector(".qp-meaning").textContent };
     });
     await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
@@ -483,7 +483,7 @@ async function waitFor(fn, timeoutMs, intervalMs) {
     );
     const after = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-      return { pos: sr.querySelector(".qp-hero__pos").textContent, def: sr.querySelector(".qp-meaning").textContent };
+      return { pos: sr.querySelector(".qp-sense--active").textContent, def: sr.querySelector(".qp-meaning").textContent };
     });
     if (before.def === after.def) throw new Error(`definition did not change: "${before.def}"`);
     return `${before.pos} "${before.def.slice(0, 30)}..." -> ${after.pos} "${after.def.slice(0, 30)}..."`;

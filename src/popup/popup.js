@@ -41,6 +41,7 @@
   }
 
   var activeCardCtx = null;
+  var atCap = false; // the card on show is the cap screen
 
   // Recent chips play outside any card, so they keep their own context.
   var recentsCtx = {
@@ -83,7 +84,8 @@
     if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
     QP.card.stopPlayback(recentsCtx);
     // At the cap, the list below the card is what can still be played.
-    $("pp-recents-title").textContent = view.state === "cap" ? "Still playable, free" : "Recent";
+    atCap = view.state === "cap";
+    $("pp-recents-title").textContent = atCap ? "Still playable" : "Recent";
     result.hidden = false;
     activeCardCtx = cardCtx();
     QP.card.render(result, view, activeCardCtx);
@@ -97,9 +99,29 @@
     QP.card.stopPlayback(recentsCtx);
   });
 
+  var clearBtn = $("pp-clear");
+  function syncClear() {
+    clearBtn.hidden = !input.value;
+  }
+
+  clearBtn.addEventListener("click", function () {
+    input.value = "";
+    syncClear();
+    hideSuggestions();
+    if (activeCardCtx) QP.card.stopPlayback(activeCardCtx);
+    activeCardCtx = null;
+    result.hidden = true;
+    result.innerHTML = "";
+    atCap = false;
+    $("pp-recents-title").textContent = "Recent";
+    refreshUsage();
+    input.focus();
+  });
+
   function doLookup(raw, source) {
     var text = String(raw || "").trim();
     if (!text) return;
+    syncClear();
     showView({ kind: "loading", word: text.split(/\s+/)[0] });
     sendMessage({ type: "LOOKUP", word: text, source: source })
       .then(function (res) {
@@ -204,6 +226,7 @@
   });
 
   input.addEventListener("input", function () {
+    syncClear();
     updateSuggestions();
   });
 
@@ -270,6 +293,10 @@
       .then(function (u) {
         if (!u) {
           usageEl.textContent = "";
+          return;
+        }
+        if (atCap) {
+          usageEl.textContent = "Replays are always free";
           return;
         }
         var txt = u.used + " word" + (u.used === 1 ? "" : "s") + " looked up today";
