@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome to QuickPronounce</title>
+    <script src="../core/theme.js"></script>
+    <link rel="stylesheet" href="welcome.css" />
+  </head>
+  <body>
+    <div class="wl">
+      <header class="wl-top">
+        <span class="wl-brand">
+          <img src="../../icons/icon128.png" alt="" aria-hidden="true" width="26" height="26" />
+          QuickPronounce
+        </span>
+        <button class="wl-textbtn" id="wl-settings" type="button">Settings</button>
+      </header>
+
+      <main>
+        <div class="wl-hero">
+          <section class="wl-intro">
+            <p class="wl-installed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+              Installed. You're all set.
+            </p>
+            <h1>Hear <span class="wl-grad">any word</span>, on any page.</h1>
+            <p class="wl-lead">Select a word anywhere on the web to hear it, with the stress marked so you can say it right back.</p>
+
+            <div class="wl-steps-head">
+              <h2>Get started</h2>
+              <span id="wl-progress" aria-live="polite"></span>
+            </div>
+            <ol class="wl-steps">
+              <li class="wl-step" id="wl-step-select">
+                <span class="wl-step-mark" aria-hidden="true">1</span>
+                <div>
+                  <div class="wl-step-title">Select a word</div>
+                  <p>Highlight any word you're unsure about, on any website.</p>
+                </div>
+              </li>
+              <li class="wl-step" id="wl-step-play">
+                <span class="wl-step-mark" aria-hidden="true">2</span>
+                <div>
+                  <div class="wl-step-title" id="wl-step-play-title">Tap Pronounce</div>
+                  <p>A card opens with the stress, the IPA and both accents. Press play as often as you like.</p>
+                </div>
+              </li>
+              <li class="wl-step" id="wl-step-pin">
+                <span class="wl-step-mark" aria-hidden="true">3</span>
+                <div>
+                  <div class="wl-step-title">Pin QuickPronounce</div>
+                  <p id="wl-pin-text"></p>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section class="wl-try" aria-labelledby="wl-try-title">
+            <div class="wl-try-head">
+              <h2 id="wl-try-title">Try it here</h2>
+              <span>Tap any underlined word</span>
+            </div>
+            <p class="wl-sentence" id="wl-sentence"></p>
+            <div id="wl-demo"></div>
+          </section>
+        </div>
+
+        <section class="wl-tiles" aria-label="What you get">
+          <article class="wl-tile">
+            <div class="wl-vis wl-vis-bars" aria-hidden="true"><i></i><i class="on"></i><i></i></div>
+            <h3>See the stress</h3>
+            <p>Taller bars mark the beat you lean on.</p>
+          </article>
+          <article class="wl-tile">
+            <div class="wl-vis wl-vis-speed" aria-hidden="true"><i>1×</i><i>0.75×</i><i class="on">0.5×</i></div>
+            <h3>Slow it down</h3>
+            <p>Hear tricky words at half speed until every sound is clear.</p>
+          </article>
+          <article class="wl-tile">
+            <div class="wl-vis wl-vis-accents" aria-hidden="true"><i class="on">US</i><i>UK</i></div>
+            <h3>US and UK</h3>
+            <p>Both accents on every card. Yours comes first.</p>
+          </article>
+        </section>
+      </main>
+
+      <footer class="wl-foot">
+        <button class="wl-textbtn" id="wl-settings-foot" type="button">Settings</button>
+        <a id="wl-site" target="_blank" rel="noopener">quickpronounce.site</a>
+      </footer>
+    </div>
+
+    <script src="../core/globals.js"></script>
+    <script src="../core/util.js"></script>
+    <script src="../core/config.js"></script>
+    <script src="../core/respell.js"></script>
+    <script src="../core/readings.js"></script>
+    <script src="../core/audioCache.js"></script>
+    <script src="../core/store.js"></script>
+    <script src="../content/card.css.js"></script>
+    <script src="../content/card.js"></script>
+    <script src="demo-words.js"></script>
+    <script src="welcome.js"></script>
+  </body>
+</html>

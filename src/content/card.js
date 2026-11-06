@@ -454,6 +454,8 @@
     }
 
     body.appendChild(pronWrap);
+    // The welcome page's demo words carry a short note; lookups never do.
+    if (m.note) body.appendChild(el("p", "qp-note", m.note));
     body.appendChild(sensesWrap);
     showReading(readings ? readings[0] : null);
 

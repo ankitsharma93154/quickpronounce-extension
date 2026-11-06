@@ -72,6 +72,7 @@ chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason === "install") {
     QP.store.setMeta({ installedAt: Date.now() }).then(QP.ratePrompt.ensureSeeded);
     QP.analytics.track(EV.INSTALLED, {});
+    chrome.tabs.create({ url: chrome.runtime.getURL("src/welcome/welcome.html") });
   } else if (details.reason === "update") {
     // Installs from before the rating prompt existed: seed its counters from
     // local history so existing regulars don't start from zero.

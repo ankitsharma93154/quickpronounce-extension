@@ -216,6 +216,8 @@
     "}",
     ".qp-pron-row__none { font-size:12px; color:var(--text-secondary); }",
 
+    ".qp-note { margin:8px 0 8px; padding:8px 12px; border-radius:var(--radius-md); background:var(--tint-purple); font-size:13px; line-height:1.45; color:var(--text-primary); }",
+
     /* ---- speed ---- */
     ".qp-pron-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; margin-top:9px; }",
     ".qp-pron-head .qp-label { margin-top:0; }",
