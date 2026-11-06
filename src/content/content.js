@@ -16,7 +16,7 @@
   window.__qpInjected = true;
 
   var QP = window.QP || {};
-  var DEFAULT_SETTINGS = { selectionButton: true, accent: "us" };
+  var DEFAULT_SETTINGS = { selectionButton: true, accent: "us", theme: "system" };
   var settings = Object.assign({}, DEFAULT_SETTINGS);
 
   var host = null;
@@ -53,6 +53,7 @@
     stage = document.createElement("div");
     stage.className = "qp-stage";
     stage.style.display = "none";
+    QP.theme.apply(stage, settings.theme);
     shadow.appendChild(stage);
   }
 
@@ -63,6 +64,7 @@
         settings = Object.assign({}, DEFAULT_SETTINGS, (res && res.settings) || {});
         settings.accent = settings.accent === "uk" ? "uk" : "us";
         settings.selectionButton = settings.selectionButton !== false;
+        QP.theme.apply(stage, settings.theme);
       });
     } catch (e) {
       /* extension context gone; leave defaults */
@@ -203,6 +205,10 @@
         startLookup(lastWord, lastAnchorRect);
       },
       onClose: hide,
+      onResize: function () {
+        var card = stage && stage.firstElementChild;
+        if (card) position(stage, lastAnchorRect, card.offsetWidth, card.offsetHeight);
+      },
       onRatePrompt: function (action) {
         sendMessage({ type: "RATE_PROMPT", action: action }).catch(function () {
           /* worker unreachable: the prompt simply comes back next time */
@@ -305,6 +311,7 @@
         settings = Object.assign({}, DEFAULT_SETTINGS, changes.settings.newValue || {});
         settings.accent = settings.accent === "uk" ? "uk" : "us";
         settings.selectionButton = settings.selectionButton !== false;
+        QP.theme.apply(stage, settings.theme);
         if (!settings.selectionButton && mode === "pill") hide();
       }
       // Rating prompt answered for good in another tab: drop it from this

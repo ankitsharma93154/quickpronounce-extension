@@ -19,6 +19,7 @@
  *     openUrl(url)  open a link in a new tab
  *     compact       boolean, true in the popup (no close button)
  *     onRatePrompt(action)  the rating prompt was answered: rate|later|dismiss
+ *     onResize()    optional: the card changed height (a tab was switched)
  *
  * QP.card.stopPlayback(ctx) - stop whatever audio this ctx is playing (the
  * caller should call this when it closes/replaces the card ctx was given
@@ -41,6 +42,41 @@
   // Nothing observed so far ("record" -> 4) has come close to this.
   var MAX_SENSE_TABS = 4;
 
+  // Playback speed, remembered across cards and pages in its own storage key.
+  // Slowing a clip is done by the player, so it costs no extra audio request.
+  var SPEEDS = [1, 0.75, 0.5];
+  var SPEED_KEY = "playbackRate";
+  var playbackRate = 1;
+
+  function applyStoredRate(value) {
+    playbackRate = SPEEDS.indexOf(value) !== -1 ? value : 1;
+  }
+
+  function setPlaybackRate(rate) {
+    playbackRate = rate;
+    try {
+      var item = {};
+      item[SPEED_KEY] = rate;
+      chrome.storage.local.set(item, function () {
+        void chrome.runtime.lastError;
+      });
+    } catch (e) {
+      /* extension context gone: it still applies to this card */
+    }
+  }
+
+  try {
+    chrome.storage.local.get(SPEED_KEY, function (res) {
+      if (chrome.runtime.lastError) return;
+      applyStoredRate(res && res[SPEED_KEY]);
+    });
+    chrome.storage.onChanged.addListener(function (changes, area) {
+      if (area === "local" && changes[SPEED_KEY]) applyStoredRate(changes[SPEED_KEY].newValue);
+    });
+  } catch (e) {
+    /* no extension context: stays at 1x */
+  }
+
   function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -60,13 +96,6 @@
 
   function accentLabel(a) {
     return a === "uk" ? "UK" : "US";
-  }
-
-  function pronRow(label, ipa) {
-    var row = el("div", "qp-pron-row");
-    row.appendChild(el("span", "qp-pron-row__accent", label));
-    row.appendChild(el("span", "qp-pron-row__ipa", ipa));
-    return row;
   }
 
   // --- state renderers ----------------------------------------------------
@@ -109,6 +138,194 @@
       list.appendChild(row);
     });
     box.appendChild(list);
+  }
+
+  function notifyResize(ctx) {
+    if (ctx && typeof ctx.onResize === "function") ctx.onResize();
+  }
+
+  function resetPlayButtons(root) {
+    Array.prototype.forEach.call(root.querySelectorAll("button"), function (b) {
+      if (typeof b._qpReset === "function") b._qpReset();
+    });
+  }
+
+  // What one accent shows for a reading, or for the word when reading is null.
+  function accentView(m, reading, accent) {
+    if (reading) {
+      var v = QP.readings.forAccent(reading, accent);
+      return { ipa: v.ipa, syllables: v.syllables, playable: v.available };
+    }
+    return {
+      ipa: (m.ipa && m.ipa[accent]) || null,
+      syllables: (m.syllables && m.syllables[accent]) || [],
+      playable: true
+    };
+  }
+
+  // One bar per syllable: the taller the bar, the stronger the stress. The
+  // joined respelling is the aria-label, so assistive tech gets one readable
+  // string instead of walking the individual bars.
+  function makeStressBars(syllables) {
+    var valid = (syllables || []).filter(function (s) {
+      return s && String(s.text || "").trim();
+    });
+    if (!valid.length) return null;
+    var wrap = el("div", "qp-stress");
+    wrap.setAttribute("role", "img");
+    wrap.setAttribute("aria-label", QP.respell.toRespelling(valid));
+    valid.forEach(function (s) {
+      var stress = s.stress === 1 ? 1 : s.stress === 2 ? 2 : 0;
+      var beat = el("div", "qp-beat qp-beat--" + stress);
+      beat.title = stress === 1 ? "Primary stress" : stress === 2 ? "Secondary stress" : "Unstressed";
+      beat.appendChild(el("div", "qp-beat__bar"));
+      beat.appendChild(el("div", "qp-beat__text", String(s.text).trim()));
+      wrap.appendChild(beat);
+    });
+    return wrap;
+  }
+
+  function accentRow(m, reading, a, featured, ctx) {
+    var view = accentView(m, reading, a);
+    var row = el("div", "qp-pron-row");
+    row.appendChild(el("span", "qp-pron-row__accent", accentLabel(a)));
+
+    var main = el("div", "qp-pron-row__main");
+    if (view.ipa) {
+      main.appendChild(el("span", "qp-pron-row__ipa", view.ipa));
+    } else {
+      main.appendChild(
+        el("span", "qp-pron-row__none", view.playable ? "Audio only" : "Not recorded for this meaning")
+      );
+    }
+    if (a === featured) main.appendChild(el("span", "qp-pron-row__mine", "Your accent"));
+    row.appendChild(main);
+
+    row.appendChild(
+      makePlayButton(m.word, a, ctx, {
+        icon: true,
+        soft: a !== featured,
+        readingId: reading ? reading.id : null,
+        unavailable: !view.playable
+      })
+    );
+    return row;
+  }
+
+  // Stress bars and both accents for one reading (null: the word itself). The
+  // reader's accent leads; the bars follow it, or the other accent when this
+  // reading has no pronunciation of its own there.
+  function fillPronunciation(wrap, m, reading, ctx) {
+    clear(wrap);
+    var featured = ctx.accent === "uk" ? "uk" : "us";
+    var other = featured === "us" ? "uk" : "us";
+
+    var bars =
+      makeStressBars(accentView(m, reading, featured).syllables) ||
+      makeStressBars(accentView(m, reading, other).syllables);
+    if (bars) wrap.appendChild(bars);
+
+    var pron = el("div", "qp-pron");
+    pron.appendChild(accentRow(m, reading, featured, featured, ctx));
+    pron.appendChild(accentRow(m, reading, other, featured, ctx));
+    wrap.appendChild(pron);
+  }
+
+  function makeSpeedControl() {
+    var group = el("div", "qp-speed");
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Playback speed");
+    SPEEDS.forEach(function (rate) {
+      var active = rate === playbackRate;
+      var b = el("button", "qp-speed__opt qp-focusable" + (active ? " qp-speed__opt--active" : ""), rate + "\u00d7");
+      b.type = "button";
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.addEventListener("click", function () {
+        setPlaybackRate(rate);
+        Array.prototype.forEach.call(group.children, function (o) {
+          o.classList.remove("qp-speed__opt--active");
+          o.setAttribute("aria-pressed", "false");
+        });
+        b.classList.add("qp-speed__opt--active");
+        b.setAttribute("aria-pressed", "true");
+      });
+      group.appendChild(b);
+    });
+    return group;
+  }
+
+  // The section heading and the speed control share one line.
+  function pronHead(title) {
+    var head = el("div", "qp-pron-head");
+    head.appendChild(el("div", "qp-label", title));
+    head.appendChild(makeSpeedControl());
+    return head;
+  }
+
+  // The "Meaning" heading, part-of-speech tabs and definitions for one list of
+  // senses. Each tab swaps the definition and the hero's pos line in place;
+  // nothing is re-fetched, every sense came back with the original lookup.
+  function fillSenses(wrap, senses, posLine, ctx) {
+    clear(wrap);
+    if (!senses.length) return;
+
+    var head = el("div", "qp-meaning-head");
+    head.appendChild(el("div", "qp-label qp-label--amber", "Meaning"));
+    var meaning = el("div", "qp-meaning");
+
+    if (senses.length > 1) {
+      var senseRow = el("div", "qp-senses");
+      senses.slice(0, MAX_SENSE_TABS).forEach(function (s, i) {
+        var tab = el("button", "qp-sense" + (i === 0 ? " qp-sense--active qp-focusable" : " qp-focusable"), s.pos || "other");
+        tab.type = "button";
+        tab.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+        tab.addEventListener("click", function () {
+          Array.prototype.forEach.call(senseRow.children, function (t) {
+            t.classList.remove("qp-sense--active");
+            t.setAttribute("aria-pressed", "false");
+          });
+          tab.classList.add("qp-sense--active");
+          tab.setAttribute("aria-pressed", "true");
+          meaning.classList.add("qp-meaning--fading");
+          setTimeout(function () {
+            fillMeaning(meaning, s);
+            posLine.textContent = s.pos || "";
+            meaning.classList.remove("qp-meaning--fading");
+            notifyResize(ctx);
+          }, 120);
+        });
+        senseRow.appendChild(tab);
+      });
+      head.appendChild(senseRow);
+    }
+    wrap.appendChild(head);
+    fillMeaning(meaning, senses[0]);
+    wrap.appendChild(meaning);
+  }
+
+  // Meanings no reading covers (surnames and the like): out of the way until
+  // asked for, since they do not belong to any of the pronunciations shown.
+  function makeOtherMeanings(otherSenses, ctx) {
+    var wrap = el("div", "qp-other");
+    var toggle = el("button", "qp-other__toggle qp-focusable", "Other meanings");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", "false");
+    var list = el("div", "qp-other__list");
+    list.hidden = true;
+    otherSenses.forEach(function (s) {
+      if (s.pos) list.appendChild(el("div", "qp-other__pos", s.pos));
+      (s.definitions && s.definitions.length ? s.definitions : s.definition ? [s.definition] : []).forEach(function (d) {
+        list.appendChild(el("div", "qp-other__def", d));
+      });
+    });
+    toggle.addEventListener("click", function () {
+      list.hidden = !list.hidden;
+      toggle.setAttribute("aria-expanded", list.hidden ? "false" : "true");
+      notifyResize(ctx);
+    });
+    wrap.appendChild(toggle);
+    wrap.appendChild(list);
+    return wrap;
   }
 
   function renderOk(root, view, ctx) {
@@ -169,94 +386,55 @@
     }
     if (any) body.appendChild(chips);
 
-    // pronunciation table: both accents together, not just the featured one
-    var hasUs = !!(m.ipa && m.ipa.us);
-    var hasUk = !!(m.ipa && m.ipa.uk);
-    if (hasUs || hasUk) {
-      body.appendChild(el("div", "qp-label", "Pronunciation"));
-      var pron = el("div", "qp-pron");
-      if (hasUs) pron.appendChild(pronRow("US", m.ipa.us));
-      if (hasUk) pron.appendChild(pronRow("UK", m.ipa.uk));
-      body.appendChild(pron);
+    // Heteronyms get one tab per reading. Everything below the tabs (stress
+    // bars, IPA, audio, meanings) belongs to the chosen reading, so a tab
+    // switch rebuilds those sections. Ordinary words have no tabs and one
+    // implicit reading.
+    var readings = m.readings && m.readings.length > 1 ? m.readings : null;
+
+    body.appendChild(pronHead(readings ? readings.length + " pronunciations" : "Pronunciation"));
+
+    var pronWrap = el("div", "qp-pron-wrap");
+    var sensesWrap = el("div", "qp-senses-wrap");
+
+    function showReading(reading) {
+      fillPronunciation(pronWrap, m, reading, ctx);
+      var readingSenses = reading ? reading.senses || [] : senses;
+      posLine.textContent = (readingSenses[0] && readingSenses[0].pos) || "";
+      fillSenses(sensesWrap, readingSenses, posLine, ctx);
     }
 
-    // respelling + syllable count, one line, follows the accent preference.
-    // Each syllable is its own span, colour/weight-coded by stress (mirrors
-    // Pronounce_web's phoneticSection.js) instead of the old caps-as-stress
-    // convention, which had no way for a reader to discover what it meant.
-    // The plain joined string (still computed server-side) becomes the
-    // aria-label, so assistive tech gets a readable fallback instead of
-    // walking the individual coloured spans.
-    var syllables = m.syllables && (accent === "uk" ? m.syllables.uk : m.syllables.us);
-    var validSyllables = (syllables || []).filter(function (s) {
-      return s && String(s.text || "").trim();
-    });
-    var respellText = m.respell && (accent === "uk" ? m.respell.uk : m.respell.us);
-    var sylCount = m.syllableCount && (accent === "uk" ? m.syllableCount.uk : m.syllableCount.us);
-    if (validSyllables.length) {
-      var rLine = el("div", "qp-respell-line");
-      if (respellText) rLine.setAttribute("aria-label", respellText);
-      var sylWrap = el("span", "qp-syllables");
-      sylWrap.setAttribute("aria-hidden", "true");
-      validSyllables.forEach(function (s, i) {
-        var stress = s.stress === 1 ? 1 : s.stress === 2 ? 2 : 0;
-        var syl = el("span", "qp-syl qp-syl--" + stress, String(s.text).trim());
-        syl.title = stress === 1 ? "Primary stress" : stress === 2 ? "Secondary stress" : "Unstressed";
-        sylWrap.appendChild(syl);
-        if (i < validSyllables.length - 1) sylWrap.appendChild(el("span", "qp-syl-sep", QP.respell.MIDDOT));
-      });
-      rLine.appendChild(sylWrap);
-      if (sylCount) {
-        rLine.appendChild(document.createTextNode(" "));
-        rLine.appendChild(el("span", "qp-dim", "· " + sylCount + (sylCount === 1 ? " syllable" : " syllables")));
-      }
-      body.appendChild(rLine);
-    }
-
-    // audio - right under pronunciation/respelling, ahead of meaning
-    var audioRow = el("div", "qp-audio");
-    audioRow.appendChild(makePlayButton(m.word, "us", ctx));
-    audioRow.appendChild(makePlayButton(m.word, "uk", ctx));
-    body.appendChild(audioRow);
-
-    // meaning: a part-of-speech switcher when the word has more than one, so
-    // an ambiguous word (e.g. "record", "bank", "wind") is never just one
-    // silent guess. Each tab swaps the definition and the hero's pos line in
-    // place; nothing is re-fetched, every sense came back with the original
-    // lookup.
-    if (senses.length) {
-      var meaningHead = el("div", "qp-meaning-head");
-      meaningHead.appendChild(el("div", "qp-label qp-label--amber", "Meaning"));
-
-      if (senses.length > 1) {
-        var senseRow = el("div", "qp-senses");
-        senses.slice(0, MAX_SENSE_TABS).forEach(function (s, i) {
-          var tab = el("button", "qp-sense" + (i === 0 ? " qp-sense--active qp-focusable" : " qp-focusable"), s.pos || "other");
-          tab.type = "button";
-          tab.setAttribute("aria-pressed", i === 0 ? "true" : "false");
-          tab.addEventListener("click", function () {
-            Array.prototype.forEach.call(senseRow.children, function (t) {
-              t.classList.remove("qp-sense--active");
-              t.setAttribute("aria-pressed", "false");
-            });
-            tab.classList.add("qp-sense--active");
-            tab.setAttribute("aria-pressed", "true");
-            meaning.classList.add("qp-meaning--fading");
-            setTimeout(function () {
-              fillMeaning(meaning, s);
-              posLine.textContent = s.pos || "";
-              meaning.classList.remove("qp-meaning--fading");
-            }, 120);
+    if (readings) {
+      var tabRow = el("div", "qp-readings");
+      QP.readings.tabLabels(readings, accent).forEach(function (label, i) {
+        var tab = el("button", "qp-reading qp-focusable" + (i === 0 ? " qp-reading--active" : ""), label);
+        tab.type = "button";
+        tab.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+        tab.addEventListener("click", function () {
+          if (tab.classList.contains("qp-reading--active")) return;
+          Array.prototype.forEach.call(tabRow.children, function (t) {
+            t.classList.remove("qp-reading--active");
+            t.setAttribute("aria-pressed", "false");
           });
-          senseRow.appendChild(tab);
+          tab.classList.add("qp-reading--active");
+          tab.setAttribute("aria-pressed", "true");
+          // Nothing from the old reading may keep playing, or start late.
+          stopPlayback(ctx);
+          resetPlayButtons(pronWrap);
+          showReading(readings[i]);
+          notifyResize(ctx);
         });
-        meaningHead.appendChild(senseRow);
-      }
-      body.appendChild(meaningHead);
+        tabRow.appendChild(tab);
+      });
+      body.appendChild(tabRow);
+    }
 
-      var meaning = el("div", "qp-meaning");
-      fillMeaning(meaning, senses[0]);
-      body.appendChild(meaning);
+    body.appendChild(pronWrap);
+    body.appendChild(sensesWrap);
+    showReading(readings ? readings[0] : null);
+
+    if (readings && m.otherSenses && m.otherSenses.length) {
+      body.appendChild(makeOtherMeanings(m.otherSenses, ctx));
     }
 
     card.appendChild(body);
@@ -372,7 +550,7 @@
     chips.appendChild(el("span", "qp-chip qp-chip--muted", "no dictionary entry yet"));
     body.appendChild(chips);
 
-    body.appendChild(el("div", "qp-label", "Pronunciation"));
+    body.appendChild(pronHead("Pronunciation"));
     body.appendChild(el("div", "qp-placeholder", "IPA and syllables not available yet."));
 
     var audioRow = el("div", "qp-audio");
@@ -446,7 +624,7 @@
   // (see content.js/popup.js) can stop it even though the <audio> element
   // itself lives outside this page.
   function requestPlayback(ctx, base64, format, onEvent) {
-    sendRuntimeMessage({ type: "PLAY_AUDIO", base64: base64, format: format }).then(function (resp) {
+    sendRuntimeMessage({ type: "PLAY_AUDIO", base64: base64, format: format, rate: playbackRate }).then(function (resp) {
       if (!resp || !resp.ok) {
         onEvent("error", { message: "Could not play audio" });
         return;
@@ -481,11 +659,29 @@
     sendRuntimeMessage({ type: "STOP_AUDIO", playbackId: playbackId });
   }
 
-  function makePlayButton(word, accent, ctx) {
-    var btn = el("button", "qp-play qp-focusable");
+  // opts (all optional):
+  //   icon         round icon-only button, for inside an accent row
+  //   soft         tinted instead of the solid gradient (the other accent)
+  //   readingId    play this heteronym reading; never falls back to plain audio
+  //   unavailable  this reading has no pronunciation in this accent
+  function makePlayButton(word, accent, ctx, opts) {
+    opts = opts || {};
+    var readingId = opts.readingId || null;
+    var base =
+      "qp-play qp-focusable" + (opts.icon ? " qp-play--icon" : "") + (opts.soft ? " qp-play--soft" : "");
+    var btn = el("button", base);
     btn.type = "button";
     var label = accentLabel(accent);
-    var btnText = "Play " + label;
+    var btnText = opts.icon ? "" : "<span>Play " + label + "</span>";
+
+    if (opts.unavailable) {
+      btn.disabled = true;
+      btn.innerHTML = SPEAKER;
+      btn.title = "Not available in this accent";
+      btn.setAttribute("aria-label", "Not available in this accent");
+      return btn;
+    }
+
     setIdle();
 
     var state = "idle";
@@ -493,25 +689,25 @@
 
     function setIdle() {
       btn.disabled = false;
-      btn.className = "qp-play qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
+      btn.className = base;
+      btn.innerHTML = SPEAKER + btnText;
       btn.removeAttribute("title");
       btn.setAttribute("aria-label", "Play " + label + " pronunciation of " + word);
     }
     function setLoading() {
       btn.disabled = true;
-      btn.className = "qp-play qp-focusable";
-      btn.innerHTML = '<span class="qp-play__spin"></span><span>' + btnText + "</span>";
+      btn.className = base;
+      btn.innerHTML = '<span class="qp-play__spin"></span>' + btnText;
     }
     function setPlaying() {
       btn.disabled = false;
-      btn.className = "qp-play qp-play--playing qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
+      btn.className = base + " qp-play--playing";
+      btn.innerHTML = SPEAKER + btnText;
     }
     function setError(msg) {
       btn.disabled = false;
-      btn.className = "qp-play qp-play--error qp-focusable";
-      btn.innerHTML = SPEAKER + "<span>" + btnText + "</span>";
+      btn.className = base + " qp-play--error";
+      btn.innerHTML = SPEAKER + btnText;
       btn.title = msg || "Could not play audio";
     }
     function done() {
@@ -542,7 +738,7 @@
       }
 
       // replay from cache if we already have the audio
-      var cached = QP.audioCache.get(word, accent);
+      var cached = QP.audioCache.get(word, accent, readingId);
       if (cached) {
         resetOthers(ctx, btn);
         requestPlayback(ctx, cached.base64, cached.format, onPlaybackEvent);
@@ -557,7 +753,7 @@
       }, AUDIO_TIMEOUT_MS);
 
       ctx
-        .requestAudio(word, accent)
+        .requestAudio(word, accent, readingId)
         .then(function (res) {
           done();
           if (state !== "loading") return; // timed out already; ignore a late reply
@@ -565,10 +761,11 @@
             state = "idle";
             if (res && res.kind === "rate_limited") setError("Busy, try again shortly");
             else if (res && res.kind === "not_found") setError("No audio for this word");
+            else if (res && res.kind === "reading_unavailable") setError("Not available in this accent");
             else setError("Could not load audio");
             return;
           }
-          QP.audioCache.put(word, accent, res.base64, res.format);
+          QP.audioCache.put(word, accent, res.base64, res.format, readingId);
           resetOthers(ctx, btn);
           requestPlayback(ctx, res.base64, res.format, onPlaybackEvent);
         })
@@ -590,9 +787,9 @@
   }
 
   function resetOthers(ctx, keepBtn) {
-    var row = keepBtn.parentNode;
-    if (!row) return;
-    Array.prototype.forEach.call(row.children, function (b) {
+    var card = keepBtn.closest(".qp-card");
+    if (!card) return;
+    Array.prototype.forEach.call(card.querySelectorAll("button"), function (b) {
       if (b !== keepBtn && typeof b._qpReset === "function") b._qpReset();
     });
   }

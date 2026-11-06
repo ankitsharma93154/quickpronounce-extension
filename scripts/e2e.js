@@ -276,22 +276,22 @@ async function waitFor(fn, timeoutMs, intervalMs) {
     if (word !== "accommodation") throw new Error("card word=" + word);
   });
 
-  await test("syllables render as stress-coded spans, one per syllable, exactly one primary", async () => {
+  await test("syllables render as stress bars, one per syllable, exactly one primary", async () => {
     const info = await page.evaluate(() => {
       const sr = document.getElementById("qp-quickpronounce-host").shadowRoot;
-      const syls = Array.from(sr.querySelectorAll(".qp-syl"));
+      const beats = Array.from(sr.querySelectorAll(".qp-beat"));
       return {
-        count: syls.length,
-        primaryCount: syls.filter((s) => s.classList.contains("qp-syl--1")).length,
-        hasTitles: syls.every((s) => !!s.title),
-        ariaLabel: sr.querySelector(".qp-respell-line") && sr.querySelector(".qp-respell-line").getAttribute("aria-label")
+        count: beats.length,
+        primaryCount: beats.filter((s) => s.classList.contains("qp-beat--1")).length,
+        hasTitles: beats.every((s) => !!s.title),
+        ariaLabel: sr.querySelector(".qp-stress") && sr.querySelector(".qp-stress").getAttribute("aria-label")
       };
     });
-    if (info.count < 2) throw new Error("expected multiple syllable spans, got " + info.count);
-    if (info.primaryCount !== 1) throw new Error("expected exactly one primary-stress syllable, got " + info.primaryCount);
-    if (!info.hasTitles) throw new Error("every syllable span should have a stress tooltip");
-    if (!info.ariaLabel) throw new Error("respell line should carry an aria-label fallback for assistive tech");
-    return `${info.count} syllables, aria-label="${info.ariaLabel}"`;
+    if (info.count < 2) throw new Error("expected multiple stress bars, got " + info.count);
+    if (info.primaryCount !== 1) throw new Error("expected exactly one primary-stress bar, got " + info.primaryCount);
+    if (!info.hasTitles) throw new Error("every stress bar should have a stress tooltip");
+    if (!info.ariaLabel) throw new Error("stress bars should carry an aria-label for assistive tech");
+    return info.count + ' syllables, aria-label="' + info.ariaLabel + '"';
   });
 
   // ---- audio playback lifecycle (offscreen document) ----------------

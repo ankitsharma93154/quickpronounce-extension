@@ -28,7 +28,7 @@
     INSTALL_ID: "installId"
   };
 
-  var DEFAULT_SETTINGS = { selectionButton: true, accent: "us" };
+  var DEFAULT_SETTINGS = { selectionButton: true, accent: "us", theme: "system" };
 
   function get(key) {
     return new Promise(function (resolve) {
@@ -61,6 +61,7 @@
     var merged = Object.assign({}, DEFAULT_SETTINGS, s && typeof s === "object" ? s : {});
     merged.accent = merged.accent === "uk" ? "uk" : "us";
     merged.selectionButton = merged.selectionButton !== false;
+    merged.theme = merged.theme === "light" || merged.theme === "dark" ? merged.theme : "system";
     return merged;
   }
 

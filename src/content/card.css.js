@@ -17,6 +17,23 @@
   var FONT =
     "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif";
 
+  // Every token the dark palette changes, and its light value, so a theme chosen
+  // in Settings can override the OS in either direction.
+  var DARK_TOKENS =
+    "--btn-primary-bg:var(--primary-gradient-hover);--link:#a78bfa;--text-primary:#f8fafc;" +
+    "--text-secondary:#cbd5e1;--bg-primary:#1e293b;--bg-secondary:#334155;--border-color:#475569;" +
+    "--status-error:#f87171;--shadow-card:0 14px 34px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.4);" +
+    "--tint-purple:rgba(167,139,250,0.10);--beat-weak:rgba(167,139,250,0.32);--beat-mid:rgba(167,139,250,0.6);" +
+    "--amber-gradient:linear-gradient(135deg,#3a2c12 0%,#4d3814 100%);--amber-border:#5c431c;--amber-text:#e2a83f;" +
+    "--scroll-thumb:rgba(203,213,225,0.28);--scroll-thumb-hover:rgba(203,213,225,0.5);";
+  var LIGHT_TOKENS =
+    "--btn-primary-bg:var(--primary-gradient);--link:var(--primary);--text-primary:#1e293b;" +
+    "--text-secondary:#64748b;--bg-primary:#ffffff;--bg-secondary:#f8fafc;--border-color:#e2e8f0;" +
+    "--status-error:#ef4444;--shadow-card:0 12px 28px rgba(110,69,226,0.20), 0 8px 24px rgba(15,23,42,0.12);" +
+    "--tint-purple:rgba(110,69,226,0.06);--beat-weak:rgba(110,69,226,0.2);--beat-mid:rgba(110,69,226,0.5);" +
+    "--amber-gradient:linear-gradient(135deg,#fdf1dd 0%,#fadfa4 100%);--amber-border:#f6ddab;--amber-text:#a15c07;" +
+    "--scroll-thumb:rgba(100,116,139,0.30);--scroll-thumb-hover:rgba(100,116,139,0.55);";
+
   QP.cardCss = [
     /* ---- tokens (mirror Pronounce_web). Declared on the rendered root
        elements themselves so they work in a shadow root and in the popup
@@ -41,6 +58,8 @@
     "  --shadow-primary-lg:0 12px 28px rgba(110,69,226,0.22);",
     "  --shadow-card:0 12px 28px rgba(110,69,226,0.20), 0 8px 24px rgba(15,23,42,0.12);",
     "  --tint-purple:rgba(110,69,226,0.06);",
+    "  --beat-weak:rgba(110,69,226,0.2);",
+    "  --beat-mid:rgba(110,69,226,0.5);",
     "  --amber-gradient:linear-gradient(135deg,#fdf1dd 0%,#fadfa4 100%);",
     "  --amber-border:#f6ddab;",
     "  --amber-text:#a15c07;",
@@ -57,26 +76,14 @@
     "  text-align:left;",
     "}",
     "@media (prefers-color-scheme: dark) {",
-    "  .qp-card, .qp-toast, .qp-pill {",
-    "    --btn-primary-bg:var(--primary-gradient-hover);",
-    "    --link:#a78bfa;",
-    "    --text-primary:#f8fafc;",
-    "    --text-secondary:#cbd5e1;",
-    "    --bg-primary:#1e293b;",
-    "    --bg-secondary:#334155;",
-    "    --border-color:#475569;",
-    "    --status-error:#f87171;",
-    "    --shadow-card:0 14px 34px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.4);",
-    "    --tint-purple:rgba(167,139,250,0.10);",
-    "    --amber-gradient:linear-gradient(135deg,#3a2c12 0%,#4d3814 100%);",
-    "    --amber-border:#5c431c;",
-    "    --amber-text:#e2a83f;",
-    "    --scroll-thumb:rgba(203,213,225,0.28);",
-    "    --scroll-thumb-hover:rgba(203,213,225,0.5);",
-    "  }",
+    "  .qp-card, .qp-toast, .qp-pill {" + DARK_TOKENS + "}",
     "}",
+    /* the choice from Settings beats the OS: two classes outrank the one above */
+    "[data-qp-theme='dark'] .qp-card, [data-qp-theme='dark'] .qp-toast, [data-qp-theme='dark'] .qp-pill {" + DARK_TOKENS + "}",
+    "[data-qp-theme='light'] .qp-card, [data-qp-theme='light'] .qp-toast, [data-qp-theme='light'] .qp-pill {" + LIGHT_TOKENS + "}",
 
     ".qp-card * , .qp-toast * { box-sizing:border-box; }",
+    ".qp-card button { font-family:inherit; }",
 
     /* ---- card shell ---- */
     ".qp-card {",
@@ -104,8 +111,10 @@
     ".qp-card--roomy .qp-label { margin-top:13px; }",
     ".qp-card--roomy .qp-meaning-head { margin-top:13px; }",
     ".qp-card--roomy .qp-pron { margin-top:9px; }",
-    ".qp-card--roomy .qp-pron-row { padding:9px 14px; }",
-    ".qp-card--roomy .qp-respell-line { margin-top:11px; padding:9px 14px; }",
+    ".qp-card--roomy .qp-pron-row { padding:8px 10px 8px 14px; }",
+    ".qp-card--roomy .qp-stress { margin-top:10px; padding:10px 14px 9px; }",
+    ".qp-card--roomy .qp-readings { margin-top:9px; }",
+    ".qp-card--roomy .qp-pron-head { margin-top:13px; }",
     ".qp-card--roomy .qp-audio { margin-top:14px; gap:10px; }",
     ".qp-card--roomy .qp-play { min-height:46px; padding:10px 14px; }",
     ".qp-card--roomy .qp-meaning { margin-top:9px; padding:11px 14px; }",
@@ -116,7 +125,7 @@
     ".qp-word { font-size:17px; font-weight:700; letter-spacing:-0.01em; color:var(--text-primary); word-break:break-word; }",
 
     /* ---- hero header: word, part of speech, close ---- */
-    ".qp-hero { position:relative; background:var(--btn-primary-bg); background-color:var(--primary); padding:13px 42px 11px 14px; }",
+    ".qp-hero { position:relative; overflow:hidden; background:var(--btn-primary-bg); background-color:var(--primary); padding:13px 42px 11px 14px; }",
     ".qp-hero::before, .qp-hero::after {",
     "  content:''; position:absolute; border-radius:50%; pointer-events:none;",
     "  border:1px solid rgba(255,255,255,0.22);",
@@ -164,34 +173,65 @@
     ".qp-meaning-head .qp-label { margin-top:0; }",
     ".qp-meaning-head .qp-senses { margin-top:0; }",
 
-    /* ---- pronunciation table: both accents, always ---- */
-    ".qp-pron { margin-top:6px; background:var(--tint-purple); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }",
-    ".qp-pron-row { display:flex; align-items:baseline; gap:10px; padding:6px 12px; }",
-    ".qp-pron-row + .qp-pron-row { border-top:1px solid var(--border-color); }",
-    /* the IPA leads; the US/UK tag is a quiet label beside it. line-height is
-       tightened as the font grows so each row stays the height it was. */
-    ".qp-pron-row__accent { flex:0 0 auto; width:22px; font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; }",
-    ".qp-pron-row__ipa {",
-    "  font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;",
-    "  font-size:16px; font-weight:600; line-height:1.35; letter-spacing:0.01em;",
-    "  color:var(--text-primary); word-break:break-word;",
+    /* ---- heteronyms: one tab per pronunciation, labelled by its respelling.
+       Case is meaningful in the labels (rih-KAWRD), so no text-transform. ---- */
+    ".qp-readings { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }",
+    ".qp-reading {",
+    "  font-size:13px; font-weight:600; padding:4px 12px; cursor:pointer;",
+    "  border-radius:var(--radius-pill); border:1px solid var(--border-color);",
+    "  background:var(--bg-primary); color:var(--text-secondary);",
+    "  transition:background-color .2s ease, color .2s ease, border-color .2s ease;",
+    "}",
+    ".qp-reading:hover { border-color:var(--primary); color:var(--link); }",
+    ".qp-reading.qp-reading--active {",
+    "  background:var(--btn-primary-bg); background-color:var(--primary);",
+    "  border-color:transparent; color:#fff; font-weight:700;",
     "}",
 
-    /* ---- respelling + syllable count, one line ---- */
-    ".qp-respell-line {",
-    "  margin-top:8px; padding:6px 12px; background:var(--tint-purple); border-radius:var(--radius-md);",
-    "  font-size:13px; color:var(--text-primary); word-break:break-word;",
+    /* ---- stress bars: one per syllable, taller means stronger. They wrap
+       rather than shrink, so a long word never loses a syllable's text. ---- */
+    ".qp-stress {",
+    "  display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px 5px;",
+    "  margin-top:7px; padding:9px 12px 7px;",
+    "  background:var(--tint-purple); border-radius:var(--radius-md);",
     "}",
-    ".qp-respell-line .qp-dim { color:var(--text-secondary); }",
-    /* stress-coded syllables: colour + weight, not letter case - matches
-       Pronounce_web/src/components/phoneticSection.js's stress-0/1/2 classes
-       (same tokens) so a reader who's seen the site recognizes it here too.
-       Each syllable also carries a title tooltip since the card has no room
-       for the website's persistent legend. */
-    ".qp-syl--0 { color:var(--text-secondary); font-weight:400; }",
-    ".qp-syl--2 { color:var(--text-primary); font-weight:500; }",
-    ".qp-syl--1 { color:var(--primary); font-weight:700; }",
-    ".qp-syl-sep { margin:0 1px; color:var(--text-secondary); opacity:0.75; }",
+    ".qp-beat { flex:1 1 auto; min-width:30px; text-align:center; }",
+    ".qp-beat__bar { border-radius:4px; background:var(--beat-weak); height:7px; }",
+    ".qp-beat--2 .qp-beat__bar { background:var(--beat-mid); height:15px; }",
+    ".qp-beat--1 .qp-beat__bar { background:var(--btn-primary-bg); background-color:var(--primary); height:24px; }",
+    ".qp-beat__text { margin-top:4px; font-size:13px; line-height:1.25; color:var(--text-secondary); white-space:nowrap; }",
+    ".qp-beat--2 .qp-beat__text { color:var(--text-primary); font-weight:500; }",
+    ".qp-beat--1 .qp-beat__text { color:var(--link); font-weight:700; }",
+
+    /* ---- both accents, always: IPA, then that accent's play button ---- */
+    ".qp-pron { margin-top:7px; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }",
+    ".qp-pron-row { display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; }",
+    ".qp-pron-row + .qp-pron-row { border-top:1px solid var(--border-color); }",
+    ".qp-pron-row__accent { flex:0 0 auto; width:22px; font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; }",
+    /* the badge wraps under a long IPA instead of cutting it off */
+    ".qp-pron-row__main { flex:1 1 auto; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:3px 8px; }",
+    ".qp-pron-row__ipa {",
+    "  font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;",
+    "  font-size:15px; font-weight:600; line-height:1.35; letter-spacing:0.01em;",
+    "  color:var(--text-primary); word-break:break-word;",
+    "}",
+    ".qp-pron-row__none { font-size:12px; color:var(--text-secondary); }",
+    ".qp-pron-row__mine {",
+    "  font-size:11px; font-weight:600; line-height:1.4; padding:1px 7px; white-space:nowrap;",
+    "  border-radius:var(--radius-pill); background:var(--border-primary-soft); color:var(--link);",
+    "}",
+
+    /* ---- speed ---- */
+    ".qp-pron-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; margin-top:9px; }",
+    ".qp-pron-head .qp-label { margin-top:0; }",
+    ".qp-speed { display:inline-flex; gap:2px; padding:2px; border-radius:var(--radius-pill); background:var(--tint-purple); }",
+    ".qp-speed__opt {",
+    "  border:0; background:transparent; cursor:pointer; padding:2px 9px; font-size:11px; font-weight:600;",
+    "  border-radius:var(--radius-pill); color:var(--text-secondary); font-variant-numeric:tabular-nums;",
+    "  transition:background-color .2s ease, color .2s ease;",
+    "}",
+    ".qp-speed__opt:hover { color:var(--link); }",
+    ".qp-speed__opt.qp-speed__opt--active { background:var(--bg-primary); color:var(--link); font-weight:700; box-shadow:0 1px 2px rgba(15,23,42,0.15); }",
 
     /* ---- meaning callout: supporting context, so a neutral surface rather
        than an accent - pronunciation and the play buttons carry the colour.
@@ -244,6 +284,17 @@
 
     /* ---- audio buttons: model on .cta-button ---- */
     ".qp-audio { display:flex; gap:8px; margin-top:10px; }",
+    ".qp-other { margin-top:6px; }",
+    ".qp-other__toggle { border:0; background:transparent; padding:0; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-secondary); }",
+    ".qp-other__toggle:hover { color:var(--link); }",
+    ".qp-other__toggle::after {",
+    "  content:''; display:inline-block; width:5px; height:5px; margin-left:6px; vertical-align:2px;",
+    "  border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg);",
+    "}",
+    ".qp-other__toggle[aria-expanded='true']::after { transform:rotate(-135deg); vertical-align:-1px; }",
+    ".qp-other__list { margin-top:4px; max-height:96px; overflow-y:auto; font-size:12px; color:var(--text-primary); }",
+    ".qp-other__list[hidden] { display:none; }",
+    ".qp-other__pos { margin-top:4px; font-size:11px; font-weight:600; text-transform:capitalize; color:var(--text-secondary); }",
     ".qp-placeholder { margin-top:6px; font-size:13px; color:var(--text-secondary); }",
     ".qp-play {",
     "  flex:1 1 0; display:inline-flex; align-items:center; justify-content:center; gap:7px;",
@@ -257,6 +308,11 @@
     "}",
     ".qp-play:hover { box-shadow:var(--shadow-primary-md); transform:translateY(-1px); }",
     ".qp-play:disabled { opacity:0.6; cursor:default; transform:none; }",
+    /* round, icon-only, inside an accent row */
+    ".qp-card .qp-play.qp-play--icon { flex:0 0 auto; width:34px; height:34px; min-height:0; padding:0; border-radius:50%; }",
+    /* the other accent: still a play button, but the reader's own leads */
+    ".qp-play.qp-play--soft { background:var(--border-primary-soft); color:var(--link); box-shadow:none; }",
+    ".qp-card .qp-play.qp-play--icon:disabled { background:var(--bg-secondary); color:var(--text-secondary); box-shadow:none; opacity:0.75; }",
     /* Compound selectors (.qp-play.qp-play--X), not bare .qp-play--X: a bare
        single class has the same specificity as .qp-play:hover above, and
        loses the fill when the cursor is still sitting on the button right
@@ -360,7 +416,7 @@
     ".qp-focusable:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }",
 
     "@media (prefers-reduced-motion: reduce) {",
-    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card, .qp-rate__go, .qp-rate__btn { transition:none; }",
+    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card, .qp-rate__go, .qp-rate__btn, .qp-reading, .qp-speed__opt { transition:none; }",
     "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active, .qp-rate__go:hover, .qp-rate__go:active { transform:none; }",
     "  .qp-play__spin { animation-duration:1.4s; }",
     "  .qp-card, .qp-pill { animation:none; }",

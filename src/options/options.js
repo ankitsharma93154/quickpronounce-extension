@@ -1,4 +1,9 @@
-/* Options page wiring. All settings live in chrome.storage.local via QP.store. */
+/*
+ * Options page wiring. All settings live in chrome.storage.local via QP.store.
+ * Preferences (on-page button, accent, theme) only take effect when the user
+ * presses Save changes. The buttons further down the page (clear recents, reset
+ * usage and so on) are one-off actions and run straight away.
+ */
 (function () {
   var QP = window.QP;
   var $ = function (id) {
@@ -18,24 +23,77 @@
     });
   }
 
-  // --- selection button + accent -------------------------------------
+  // --- preferences, saved by the Save changes button -------------------
   var selBtn = $("op-selbtn");
   var accentRadios = document.querySelectorAll('input[name="op-accent"]');
+  var themeRadios = document.querySelectorAll('input[name="op-theme"]');
+  var saveBtn = $("op-save");
+  var saveStatus = $("op-save-status");
+  var saved = null; // what's in storage; null until it has loaded
+
+  function radioValue(radios) {
+    var picked = Array.prototype.find.call(radios, function (r) {
+      return r.checked;
+    });
+    return picked ? picked.value : null;
+  }
+
+  function currentForm() {
+    return {
+      selectionButton: selBtn.checked,
+      accent: radioValue(accentRadios) === "uk" ? "uk" : "us",
+      theme: QP.theme.normalize(radioValue(themeRadios))
+    };
+  }
+
+  function isDirty() {
+    if (!saved) return false;
+    var form = currentForm();
+    return (
+      form.selectionButton !== saved.selectionButton ||
+      form.accent !== saved.accent ||
+      form.theme !== saved.theme
+    );
+  }
+
+  function onFormChange() {
+    var dirty = isDirty();
+    saveBtn.disabled = !dirty;
+    saveStatus.textContent = dirty ? "Unsaved changes" : "";
+  }
 
   QP.store.getSettings().then(function (s) {
-    selBtn.checked = s.selectionButton !== false;
+    saved = { selectionButton: s.selectionButton, accent: s.accent, theme: s.theme };
+    selBtn.checked = s.selectionButton;
     accentRadios.forEach(function (r) {
-      r.checked = r.value === (s.accent === "uk" ? "uk" : "us");
+      r.checked = r.value === s.accent;
+    });
+    themeRadios.forEach(function (r) {
+      r.checked = r.value === s.theme;
+    });
+    QP.theme.applyToPage(s.theme);
+  });
+
+  selBtn.addEventListener("change", onFormChange);
+  accentRadios.forEach(function (r) {
+    r.addEventListener("change", onFormChange);
+  });
+  themeRadios.forEach(function (r) {
+    r.addEventListener("change", onFormChange);
+  });
+
+  saveBtn.addEventListener("click", function () {
+    var form = currentForm();
+    saveBtn.disabled = true;
+    QP.store.setSettings(form).then(function () {
+      saved = form;
+      QP.theme.applyToPage(form.theme);
+      saveStatus.textContent = "Saved";
     });
   });
 
-  selBtn.addEventListener("change", function () {
-    QP.store.setSettings({ selectionButton: selBtn.checked });
-  });
-  accentRadios.forEach(function (r) {
-    r.addEventListener("change", function () {
-      if (r.checked) QP.store.setSettings({ accent: r.value === "uk" ? "uk" : "us" });
-    });
+  window.addEventListener("beforeunload", function (e) {
+    if (isDirty()) e.preventDefault();
   });
 
   // --- keyboard shortcut -------------------------------------------------

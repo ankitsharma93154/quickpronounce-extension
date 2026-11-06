@@ -58,7 +58,7 @@
     if (stoppedId != null) broadcast(stoppedId, "stopped");
   }
 
-  function play(playbackId, base64, format) {
+  function play(playbackId, base64, format, rate) {
     var previousId = activeId;
     try {
       audio.pause();
@@ -82,6 +82,11 @@
     }
 
     audio.src = activeUrl;
+    // After src: loading a new source resets playbackRate to the default.
+    var speed = rate === 0.75 || rate === 0.5 ? rate : 1;
+    audio.defaultPlaybackRate = speed;
+    audio.playbackRate = speed;
+    audio.preservesPitch = true;
     audio.onended = function () {
       if (activeId !== playbackId) return;
       activeId = null;
@@ -114,7 +119,7 @@
   chrome.runtime.onMessage.addListener(function (msg) {
     if (!msg || !msg.type) return;
     if (msg.type === "OFFSCREEN_PLAY") {
-      play(msg.playbackId, msg.base64, msg.format);
+      play(msg.playbackId, msg.base64, msg.format, msg.rate);
       return;
     }
     if (msg.type === "OFFSCREEN_STOP") {

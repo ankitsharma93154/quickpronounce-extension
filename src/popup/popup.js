@@ -278,6 +278,7 @@
 
   QP.store.getSettings().then(function (s) {
     accent = s.accent === "uk" ? "uk" : "us";
+    QP.theme.applyToPage(s.theme);
     refreshRecents();
     refreshUsage();
   });

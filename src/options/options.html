@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>QuickPronounce settings</title>
+    <script src="../core/theme.js"></script>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
@@ -36,6 +37,21 @@
         </div>
         <p class="op-hint">Chooses which transcription the card features. US and UK audio are always both available.</p>
       </section>
+
+      <section class="op-card">
+        <h2>Appearance</h2>
+        <div class="op-row">
+          <label class="op-radio"><input type="radio" name="op-theme" value="system" /> <span>Match system</span></label>
+          <label class="op-radio"><input type="radio" name="op-theme" value="light" /> <span>Light</span></label>
+          <label class="op-radio"><input type="radio" name="op-theme" value="dark" /> <span>Dark</span></label>
+        </div>
+        <p class="op-hint">Applies to the pronunciation card, the popup and this page.</p>
+      </section>
+
+      <div class="op-savebar">
+        <span class="op-save-status" id="op-save-status" role="status"></span>
+        <button class="op-btn" id="op-save" type="button" disabled>Save changes</button>
+      </div>
 
       <section class="op-card">
         <h2>Keyboard shortcut</h2>

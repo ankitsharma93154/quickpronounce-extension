@@ -38,6 +38,32 @@
   }
 }
 
+/* The choice from Settings beats the OS: :root[attr] outranks :root above. */
+:root[data-qp-theme="dark"] {
+  color-scheme: dark;
+  --btn-bg: var(--primary-gradient-hover);
+  --link: #a78bfa;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --surface: #1e293b;
+  --page: #0f172a;
+  --bg-secondary: #334155;
+  --border-color: #475569;
+  --shadow-hero: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+:root[data-qp-theme="light"] {
+  color-scheme: light;
+  --btn-bg: var(--primary-gradient);
+  --link: var(--primary);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --surface: #ffffff;
+  --page: #eef1f6;
+  --bg-secondary: #f8fafc;
+  --border-color: #e2e8f0;
+  --shadow-hero: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -106,6 +132,26 @@ body {
 }
 .op-btn--ghost:hover { background: rgba(var(--primary-rgb), 0.08); box-shadow: none; }
 .op-btnrow { display: flex; gap: 8px; }
+
+/* Always in view while scrolling, so unsaved changes can't be missed. */
+.op-savebar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hero);
+}
+.op-savebar .op-btn { margin-top: 0; }
+.op-btn:disabled { opacity: 0.45; cursor: default; box-shadow: none; transform: none; }
+.op-save-status { font-size: 13px; color: var(--text-secondary); }
 
 .op-diag {
   margin: 10px 0 0;

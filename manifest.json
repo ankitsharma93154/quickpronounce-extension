@@ -41,6 +41,7 @@
         "src/core/readings.js",
         "src/core/normalize.js",
         "src/core/audioCache.js",
+        "src/core/theme.js",
         "src/content/card.css.js",
         "src/content/card.js",
         "src/content/content.js"

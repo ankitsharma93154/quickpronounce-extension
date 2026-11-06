@@ -41,6 +41,7 @@ var CONTENT_FILES = [
   "src/core/readings.js",
   "src/core/normalize.js",
   "src/core/audioCache.js",
+  "src/core/theme.js",
   "src/content/card.css.js",
   "src/content/card.js",
   "src/content/content.js"
@@ -142,7 +143,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   }
   if (msg.type === "PLAY_AUDIO") {
     var tabId = sender && sender.tab && sender.tab.id != null ? sender.tab.id : null;
-    playAudio(msg.base64, msg.format, tabId).then(sendResponse);
+    playAudio(msg.base64, msg.format, tabId, msg.rate).then(sendResponse);
     return true;
   }
   if (msg.type === "STOP_AUDIO") {
@@ -368,13 +369,13 @@ function ensureOffscreenDocument() {
     });
 }
 
-function playAudio(base64, format, tabId) {
+function playAudio(base64, format, tabId, rate) {
   var playbackId = ++playbackCounter;
   if (tabId != null) playbackTabs.set(playbackId, tabId);
   return ensureOffscreenDocument()
     .then(function () {
       chrome.runtime.sendMessage(
-        { type: "OFFSCREEN_PLAY", playbackId: playbackId, base64: base64, format: format },
+        { type: "OFFSCREEN_PLAY", playbackId: playbackId, base64: base64, format: format, rate: rate },
         function () {
           void chrome.runtime.lastError;
         }
