@@ -498,9 +498,9 @@ async function waitFor(fn, timeoutMs, intervalMs) {
     return netUrls.map((u) => u.split(API)[1]).join(" , ");
   });
 
-  await test("auth: every request carries a UUID X-Install-Id, never an API key", async () => {
+  await test("auth: every request carries a test- UUID X-Install-Id, never an API key", async () => {
     if (netReqs.length === 0) throw new Error("no API requests captured");
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRe = /^test-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const bad = netReqs.filter((r) => {
       const h = r.headers || {};
       const installId = h["X-Install-Id"] || h["x-install-id"];

@@ -5,9 +5,9 @@ plusversion.md instead.)
 
 ## Keep test installs out of the usage data
 
-**Status:** agreed 2026-10-09, not started. Do this in the next version,
-before running any browser test (scripts/e2e.js, puppeteer) against the live
-API again.
+**Status:** built 2026-11-06, not deployed. The extension half ships with
+v1.0.5 (unpacked copies get a `test-` id); the API half needs its push. Until
+that push, run scripts/e2e.js only against a local API, not the live one.
 
 **Why:** on 2026-10-09 the v1.0.4 browser test runs each launched a fresh
 Chrome profile, so each got a new random install id and hit the live API.

@@ -149,7 +149,12 @@
   async function getInstallId() {
     var existing = await get(KEYS.INSTALL_ID);
     if (typeof existing === "string" && existing) return existing;
-    var id = crypto.randomUUID();
+    // Store installs always carry an update_url; an unpacked copy (a test
+    // browser, a manual "Load unpacked") has none, and the API leaves test- ids
+    // out of usage history. Existing ids are kept above, so this never changes
+    // anyone's id.
+    var unpacked = !chrome.runtime.getManifest().update_url;
+    var id = (unpacked ? "test-" : "") + crypto.randomUUID();
     var obj = {};
     obj[KEYS.INSTALL_ID] = id;
     await set(obj);

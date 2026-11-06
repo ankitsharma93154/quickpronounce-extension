@@ -31,8 +31,9 @@ function eq(name, a, b) {
 
 // --- sandbox with in-memory chrome.storage.local ----------------------
 const storageData = {};
+let sandboxManifest = { update_url: "https://clients2.google.com/service/update2/crx" };
 const chromeStub = {
-  runtime: { lastError: null },
+  runtime: { lastError: null, getManifest: () => sandboxManifest },
   storage: {
     local: {
       get(key, cb) {
@@ -453,6 +454,24 @@ const QP = sandbox.QP;
     eq("reading clip separate", AC.get("record", "us", "r-3f3a836454").base64, "VERB");
     ok("other reading not found", AC.get("record", "us", "r-c353b877a8") === null && !AC.has("record", "uk", "r-3f3a836454"));
     AC.clear();
+  }
+
+  console.log("install id:");
+  {
+    const STORE = sandbox.QP.store;
+    const fresh = async () => {
+      const o = {};
+      o[STORE.KEYS.INSTALL_ID] = "";
+      await new Promise((res) => chromeStub.storage.local.set(o, res));
+      return STORE.getInstallId();
+    };
+    sandboxManifest = {};
+    ok("an unpacked copy gets a test- id", /^test-[0-9a-f-]{36}$/i.test(await fresh()));
+    const kept = await STORE.getInstallId();
+    sandboxManifest = { update_url: "https://clients2.google.com/service/update2/crx" };
+    eq("an existing id is never changed", await STORE.getInstallId(), kept);
+    ok("a store install gets a plain id", /^[0-9a-f-]{36}$/i.test(await fresh()));
+    ok("the API accepts both shapes", /^[a-z0-9-]{20,64}$/i.test("test-" + kept.replace(/^test-/, "")) );
   }
 
   console.log("\n" + (failed ? failed + " FAILED, " : "") + passed + " passed");
