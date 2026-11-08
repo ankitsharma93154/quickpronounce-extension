@@ -352,17 +352,18 @@
     ".qp-link:hover { text-decoration:underline; }",
     ".qp-brand { font-size:11px; color:var(--text-secondary); }",
 
-    /* ---- rating prompt: one quiet box above the footer, no entry animation ---- */
+    /* ---- rating prompt: one quiet box under the pronunciation, revealed
+       after the first clip plays, no entry animation ---- */
     /* one paragraph whose last words are the two choices. The line height
        leaves room for the "Rate it" pill, so its line sits no lower than the
        others. */
     ".qp-rate {",
-    "  margin:8px 14px 0; padding:8px 12px; border-radius:var(--radius-md);",
+    "  margin:10px 0 0; padding:8px 12px; border-radius:var(--radius-md);",
     "  background:var(--tint-purple); font-size:12px; line-height:22px; color:var(--text-secondary);",
     "  text-wrap:pretty;",
     "}",
-    ".qp-card--roomy .qp-rate { margin:10px 20px 0; }",
-    ".qp-rate__actions { display:inline-flex; align-items:center; gap:2px; white-space:nowrap; vertical-align:middle; margin-left:2px; }",
+    /* baseline, not middle: the labels then sit on the sentence's own line */
+    ".qp-rate__actions { display:inline-flex; align-items:baseline; gap:2px; white-space:nowrap; vertical-align:baseline; margin-left:2px; }",
     ".qp-rate__go, .qp-rate__btn {",
     "  height:20px; display:inline-flex; align-items:center; justify-content:center;",
     "  border:0; background:transparent; cursor:pointer; font:inherit; font-size:12px; line-height:1.2;",

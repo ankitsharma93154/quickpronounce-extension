@@ -84,7 +84,7 @@
       MIN_INSTALL_DAYS: 7,
       MIN_ACTIVE_DAYS: 4,
       MIN_LOOKUPS: 25,
-      MAX_SHOWS: 2,
+      MAX_SHOWS: 4,
       REASK_DELAY_MS: 7 * 24 * 60 * 60 * 1000
     },
 

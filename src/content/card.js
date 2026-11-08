@@ -18,7 +18,7 @@
  *     onClose()     dismiss the card
  *     openUrl(url)  open a link in a new tab
  *     compact       boolean, true in the popup (no close button)
- *     onRatePrompt(action)  the rating prompt was answered: rate|later|dismiss
+ *     onRatePrompt(action)  the rating prompt was revealed (seen) or answered: rate|later|dismiss
  *     onResize()    optional: the card changed height (a tab was switched)
  *
  * QP.card.stopPlayback(ctx) - stop whatever audio this ctx is playing (the
@@ -463,11 +463,23 @@
       body.appendChild(makeOtherMeanings(m.otherSenses, ctx));
     }
 
-    card.appendChild(body);
-
     // The service worker only attaches ratePrompt for engaged installs (see
-    // ratePrompt.js); the popup never shows it.
-    if (view.ratePrompt && !ctx.compact) card.appendChild(renderRatePrompt(view.ratePrompt, ctx));
+    // ratePrompt.js); the popup never shows it. It stays hidden until the first
+    // clip plays to the end, then sits under the pronunciation (outside
+    // pronWrap, so a reading switch keeps it). Revealing it is what counts.
+    if (view.ratePrompt && !ctx.compact) {
+      pronWrap.addEventListener(
+        "qp-played",
+        function () {
+          body.insertBefore(renderRatePrompt(view.ratePrompt, ctx), pronWrap.nextSibling);
+          notifyResize(ctx);
+          ctx.onRatePrompt("seen");
+        },
+        { once: true }
+      );
+    }
+
+    card.appendChild(body);
 
     // footer
     var foot = el("div", "qp-foot");
@@ -751,6 +763,9 @@
       } else if (event === "ended" || event === "stopped") {
         state = "idle";
         setIdle();
+        // A clip heard to the end; renderOk uses the first one to reveal the
+        // rating prompt.
+        if (event === "ended") btn.dispatchEvent(new CustomEvent("qp-played", { bubbles: true }));
       } else if (event === "error") {
         state = "idle";
         setError((extra && extra.message) || "Could not play audio");

@@ -131,8 +131,9 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     return true;
   }
   if (msg.type === "RATE_PROMPT") {
-    var action = msg.action === "rate" || msg.action === "later" ? msg.action : "dismiss";
-    QP.analytics.track(EV.RATE_PROMPT_ACTION, { action: action });
+    var action = msg.action === "seen" || msg.action === "rate" || msg.action === "later" ? msg.action : "dismiss";
+    if (action === "seen") QP.analytics.track(EV.RATE_PROMPT_SHOWN, {});
+    else QP.analytics.track(EV.RATE_PROMPT_ACTION, { action: action });
     QP.ratePrompt.respond(action).then(function () {
       sendResponse({ ok: true });
     });
@@ -282,15 +283,13 @@ function okResult(model, extra) {
 
 // Every successful lookup feeds the rating prompt's counters; only an on-page
 // card can carry the prompt itself (never the popup, whose sources all start
-// with "popup"). A failure here must never cost the user their result.
+// with "popup"). The card reports it "seen" once it reveals it. A failure here
+// must never cost the user their result.
 async function withRatePrompt(result, source) {
   try {
     var canShow = String(source || "").indexOf("popup") !== 0;
     var prompt = await QP.ratePrompt.onSuccessfulLookup({ canShow: canShow });
-    if (prompt) {
-      result.ratePrompt = prompt;
-      QP.analytics.track(EV.RATE_PROMPT_SHOWN, { variant: prompt.variant, source: source });
-    }
+    if (prompt) result.ratePrompt = prompt;
   } catch (e) {
     /* never block a lookup on the prompt */
   }

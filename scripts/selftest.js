@@ -282,7 +282,8 @@ const QP = sandbox.QP;
     ok("full history stands in for active days", RP.due(st({ lookups: 25, activeDays: days(1), fullHistory: true }), old, now) === true);
     ok("full history still needs 25 lookups", RP.due(st({ lookups: 10, fullHistory: true }), old, now) === false);
     ok("never after done", RP.due(st({ lookups: 99, activeDays: days(9), done: true }), old, now) === false);
-    ok("never after 2 shows", RP.due(st({ lookups: 99, activeDays: days(9), shows: 2 }), old, now) === false);
+    ok("still due after 3 seen shows", RP.due(st({ lookups: 99, activeDays: days(9), shows: 3 }), old, now) === true);
+    ok("never after 4 seen shows", RP.due(st({ lookups: 99, activeDays: days(9), shows: 4 }), old, now) === false);
     ok("not before nextAt", RP.due(st({ lookups: 99, activeDays: days(9), shows: 1, nextAt: now + DAY }), old, now) === false);
 
     // seeding from the local analytics buffer
@@ -307,14 +308,25 @@ const QP = sandbox.QP;
     eq("24th lookup: no prompt yet", await RP.onSuccessfulLookup({ canShow: true }), null);
     eq("popup lookup counts but never shows", await RP.onSuccessfulLookup({ canShow: false }), null);
     eq("next on-page lookup: first variant", await RP.onSuccessfulLookup({ canShow: true }), { variant: "first" });
-    eq("right after: held back by the re-ask delay", await RP.onSuccessfulLookup({ canShow: true }), null);
+    eq("an unseen offer costs nothing: offered again", await RP.onSuccessfulLookup({ canShow: true }), { variant: "first" });
+    eq("offers alone never count as shows", (await QP.store.getRatePrompt()).shows, 0);
+    const beforeSeen = Date.now();
+    await RP.respond("seen");
+    let rp = await QP.store.getRatePrompt();
+    ok("seen counts one show and holds it to the next local day", rp.shows === 1 && rp.nextAt === RP.startOfNextDay(beforeSeen) && rp.nextAt > beforeSeen);
+    eq("same day after seen: no prompt", await RP.onSuccessfulLookup({ canShow: true }), null);
     await RP.respond("later");
-    ok("later does not end it", (await QP.store.getRatePrompt()).done === false);
-    await QP.store.setRatePrompt(Object.assign(await QP.store.getRatePrompt(), { nextAt: 0 }));
+    rp = await QP.store.getRatePrompt();
+    ok("later does not end it, and waits a week", rp.done === false && rp.nextAt >= beforeSeen + QP.config.RATE_PROMPT.REASK_DELAY_MS);
+    await QP.store.setRatePrompt(Object.assign(rp, { nextAt: 0 }));
     eq("after the delay: second variant", await RP.onSuccessfulLookup({ canShow: true }), { variant: "second" });
-    ok("second show alone does not set done (other tabs would pull it)", (await QP.store.getRatePrompt()).done === false);
-    await QP.store.setRatePrompt(Object.assign(await QP.store.getRatePrompt(), { nextAt: 0 }));
-    eq("never a third", await RP.onSuccessfulLookup({ canShow: true }), null);
+    for (let i = 0; i < 3; i++) {
+      await RP.respond("seen");
+      await QP.store.setRatePrompt(Object.assign(await QP.store.getRatePrompt(), { nextAt: 0 }));
+    }
+    rp = await QP.store.getRatePrompt();
+    ok("ignored shows alone do not set done (other tabs would pull it)", rp.done === false && rp.shows === 4);
+    eq("never a fifth", await RP.onSuccessfulLookup({ canShow: true }), null);
 
     await QP.store.setRatePrompt(st({ lookups: 99, activeDays: days(5) }));
     await RP.respond("rate");

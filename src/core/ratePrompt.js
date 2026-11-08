@@ -9,10 +9,12 @@
  *   - successful lookups on at least MIN_ACTIVE_DAYS distinct local days
  *   - at least MIN_LOOKUPS successful lookups in total
  *
- * How often: at most MAX_SHOWS impressions, ever. An impression (answered or
- * not) holds the next one back by REASK_DELAY_MS. "Rate it" (either showing)
- * and "No thanks" (second showing) end it for good; "Not now" (first
- * showing) leaves the one re-ask in place.
+ * How often: a lookup only offers the prompt; the card reveals it after the
+ * first clip finishes playing and only then reports it "seen", so a card closed
+ * unheard costs nothing. At most MAX_SHOWS seen impressions, ever. One left
+ * unanswered comes back the next local day the extension is used; "Not now"
+ * (first showing) holds it back by REASK_DELAY_MS; "Rate it" (either showing)
+ * and "No thanks" (later showings) end it for good.
  *
  * Installs that predate this feature are seeded once from the local
  * analytics ring buffer (analytics.js), so existing regulars don't start from
@@ -48,6 +50,11 @@
       nextAt: Number(s.nextAt) || 0,
       done: !!s.done
     };
+  }
+
+  function startOfNextDay(ts) {
+    var d = new Date(ts);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
   }
 
   function addDay(state, day) {
@@ -106,7 +113,8 @@
 
   // Call once per successful lookup. Records the activity and returns
   // { variant: "first" | "second" } when this card should carry the prompt,
-  // or null. Returning a variant counts as the impression.
+  // or null. This is only an offer: nothing counts until the card reports
+  // the prompt "seen" (see respond).
   async function onSuccessfulLookup(opts) {
     opts = opts || {};
     var now = Date.now();
@@ -117,30 +125,34 @@
     var show = null;
     if (opts.canShow) {
       var meta = await QP.store.getMeta();
-      if (due(state, meta.installedAt, now)) {
-        show = { variant: state.shows === 0 ? "first" : "second" };
-        state.shows++;
-        state.nextAt = now + QP.config.RATE_PROMPT.REASK_DELAY_MS;
-        // Not marking `done` at MAX_SHOWS here: due() already stops further
-        // impressions, and `done` going true is what tells other tabs to pull
-        // the prompt, which would also pull it from the card just shown.
-      }
+      if (due(state, meta.installedAt, now)) show = { variant: state.shows === 0 ? "first" : "second" };
     }
     await QP.store.setRatePrompt(state);
     return show;
   }
 
-  // action: "rate" | "later" | "dismiss"
+  // action: "seen" | "rate" | "later" | "dismiss"
   async function respond(action) {
+    var now = Date.now();
     var state = await load();
-    if (action === "rate" || action === "dismiss") state.done = true;
-    // "later": nothing to change, the impression already pushed nextAt out.
+    if (action === "seen") {
+      // Not marking `done` at MAX_SHOWS here: due() already stops further
+      // impressions, and `done` going true is what tells other tabs to pull
+      // the prompt, which would also pull it from the card just shown.
+      state.shows++;
+      state.nextAt = startOfNextDay(now);
+    } else if (action === "later") {
+      state.nextAt = now + QP.config.RATE_PROMPT.REASK_DELAY_MS;
+    } else if (action === "rate" || action === "dismiss") {
+      state.done = true;
+    }
     await QP.store.setRatePrompt(state);
     return state;
   }
 
   QP.ratePrompt = {
     localDay: localDay,
+    startOfNextDay: startOfNextDay,
     seedFrom: seedFrom,
     due: due,
     ensureSeeded: ensureSeeded,
