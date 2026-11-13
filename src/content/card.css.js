@@ -199,15 +199,39 @@
     ".qp-beat--1 .qp-beat__text { color:var(--link); font-weight:700; }",
 
     /* ---- both accents, always: IPA, then that accent's play button ---- */
-    ".qp-pron { margin-top:7px; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; }",
-    ".qp-pron-row { display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; }",
-    ".qp-pron-row + .qp-pron-row { border-top:1px solid var(--border-color); }",
+    /* a two-way switch of separate cards. The unselected one is a quiet grey
+       fill with no visible border; the selected one is tinted with a brand
+       border. Every row always has a 1px border (transparent when quiet), so
+       selecting only recolours it and never shifts the layout. */
+    ".qp-pron { margin-top:7px; display:flex; flex-direction:column; gap:4px; }",
+    ".qp-pron-row {",
+    "  display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px;",
+    "  border:1px solid transparent; border-radius:var(--radius-md); background:var(--bg-secondary);",
+    "  transition:background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .12s ease;",
+    "}",
+    ".qp-pron-row--tappable { cursor:pointer; }",
+    ".qp-pron-row--tappable:hover { border-color:rgba(var(--primary-rgb),0.25); }",
+    /* pressed: the row is a button, so it gives a little on press */
+    ".qp-pron-row--tappable:active { transform:scale(0.985); }",
+    ".qp-pron-row.qp-pron-row--selected {",
+    "  background:rgba(var(--primary-rgb),0.10);",
+    "  border-color:rgba(var(--primary-rgb),0.45);",
+    "}",
+    ".qp-pron-row.qp-pron-row--selected.qp-pron-row--tappable:hover { border-color:rgba(var(--primary-rgb),0.65); }",
+    /* while this row's clip plays, the whole row glows, not just the icon */
+    ".qp-pron-row.qp-pron-row--selected:has(.qp-play--playing) {",
+    "  background:rgba(var(--primary-rgb),0.14);",
+    "  border-color:rgba(var(--primary-rgb),0.65);",
+    "  box-shadow:0 0 0 3px rgba(var(--primary-rgb),0.15);",
+    "}",
     ".qp-pron-row__accent {",
     "  flex:0 0 auto; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;",
-    "  border-radius:50%; border:1px solid var(--border-color); background:var(--bg-secondary);",
+    /* bg-primary, not bg-secondary: the quiet row is already bg-secondary */
+    "  border-radius:50%; border:1px solid var(--border-color); background:var(--bg-primary);",
     "  font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;",
+    "  transition:background-color .2s ease, color .2s ease, border-color .2s ease;",
     "}",
-    ".qp-pron-row__accent--mine { border-color:transparent; background:var(--btn-primary-bg); background-color:var(--primary); color:#fff; }",
+    ".qp-pron-row--selected .qp-pron-row__accent { border-color:transparent; background:var(--btn-primary-bg); background-color:var(--primary); color:#fff; }",
     ".qp-pron-row__main { flex:1 1 auto; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:3px 8px; }",
     ".qp-pron-row__ipa {",
     "  font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;",
@@ -273,11 +297,13 @@
     "  background:var(--bg-primary); color:var(--text-secondary); cursor:pointer;",
     "  transition:background-color .2s ease, color .2s ease, border-color .2s ease;",
     "}",
-    ".qp-sense:hover { border-color:var(--primary); color:var(--primary); }",
+    /* --link, not --primary: same purple in light mode, but a lighter violet
+       in dark, where #6e45e2 text on the dark card is only ~3:1 */
+    ".qp-sense:hover { border-color:var(--link); color:var(--link); }",
     ".qp-sense--only { cursor:default; }",
     ".qp-sense--active {",
-    "  background:var(--border-primary-soft); border-color:var(--primary);",
-    "  color:var(--primary); font-weight:700;",
+    "  background:var(--border-primary-soft); border-color:var(--link);",
+    "  color:var(--link); font-weight:700;",
     "}",
 
     /* ---- audio buttons: model on .cta-button ---- */
@@ -310,6 +336,10 @@
     ".qp-card .qp-play.qp-play--icon { flex:0 0 auto; width:34px; height:34px; min-height:0; padding:0; border-radius:50%; }",
     /* the other accent: still a play button, but the reader's own leads */
     ".qp-play.qp-play--soft { background:var(--border-primary-soft); color:var(--link); box-shadow:none; }",
+    /* inside the accent switch, the unselected row's button is the soft one.
+       Playing/error/disabled keep their own look (the :nots), since this
+       selector outranks them. */
+    ".qp-pron-row:not(.qp-pron-row--selected) .qp-play.qp-play--icon:not(.qp-play--playing):not(.qp-play--error):not(:disabled) { background:var(--border-primary-soft); color:var(--link); box-shadow:none; }",
     ".qp-card .qp-play.qp-play--icon:disabled { background:var(--bg-secondary); color:var(--text-secondary); box-shadow:none; opacity:0.75; }",
     /* Compound selectors (.qp-play.qp-play--X), not bare .qp-play--X: a bare
        single class has the same specificity as .qp-play:hover above, and
@@ -460,8 +490,8 @@
     ".qp-focusable:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }",
 
     "@media (prefers-reduced-motion: reduce) {",
-    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card, .qp-rate__go, .qp-rate__btn, .qp-reading, .qp-speed__opt, .qp-cap__cta { transition:none; }",
-    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active, .qp-rate__go:hover, .qp-rate__go:active, .qp-cap__cta:hover { transform:none; }",
+    "  .qp-play, .qp-pill, .qp-retry, .qp-hero__close, .qp-meaning, .qp-card, .qp-rate__go, .qp-rate__btn, .qp-reading, .qp-speed__opt, .qp-cap__cta, .qp-pron-row, .qp-pron-row__accent { transition:none; }",
+    "  .qp-play:hover, .qp-pill:hover, .qp-retry:hover, .qp-hero__close:hover, .qp-hero__close:active, .qp-rate__go:hover, .qp-rate__go:active, .qp-cap__cta:hover, .qp-pron-row--tappable:active { transform:none; }",
     "  .qp-play__spin { animation-duration:1.4s; }",
     "  .qp-card, .qp-pill { animation:none; }",
     "  .qp-eq span { animation:none; transform:scaleY(0.7); }",

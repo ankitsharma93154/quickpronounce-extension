@@ -191,14 +191,12 @@
   function accentRow(m, reading, a, featured, ctx, onPlay) {
     var view = accentView(m, reading, a);
     var row = el("div", "qp-pron-row");
-    // The reader's own accent is the filled circle.
-    var mine = a === featured;
-    var tag = el("span", "qp-pron-row__accent" + (mine ? " qp-pron-row__accent--mine" : ""), accentLabel(a));
-    if (mine) {
-      tag.title = "Your accent";
-      tag.setAttribute("role", "img");
-      tag.setAttribute("aria-label", accentLabel(a) + ", your accent");
-    }
+    // Selection (fillPronunciation) fills this circle; the tooltip still says
+    // which accent is the reader's own.
+    var tag = el("span", "qp-pron-row__accent", accentLabel(a));
+    tag.setAttribute("role", "img");
+    tag.setAttribute("aria-label", accentLabel(a));
+    if (a === featured) tag.title = "Your accent";
     row.appendChild(tag);
 
     var main = el("div", "qp-pron-row__main");
@@ -211,23 +209,36 @@
     }
     row.appendChild(main);
 
-    row.appendChild(
-      makePlayButton(m.word, a, ctx, {
-        icon: true,
-        soft: a !== featured,
-        readingId: reading ? reading.id : null,
-        unavailable: !view.playable,
-        onPlay: function () {
-          onPlay(a);
-        }
-      })
-    );
+    // Not soft here: the selected row's button is solid, the other one is
+    // tinted by CSS, so the look follows the selection.
+    var btn = makePlayButton(m.word, a, ctx, {
+      icon: true,
+      readingId: reading ? reading.id : null,
+      unavailable: !view.playable,
+      onPlay: function () {
+        onPlay(a);
+      }
+    });
+    row.appendChild(btn);
+
+    // The whole row is the tap target; the button stays the keyboard/screen
+    // reader control, so the row itself takes no focus.
+    if (view.playable) {
+      row.classList.add("qp-pron-row--tappable");
+      row.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest("button")) return;
+        btn.click();
+      });
+    }
+    row._qpPlayable = view.playable;
+    row._qpTag = tag;
     return row;
   }
 
   // Stress bars and both accents for one reading (null: the word itself). The
-  // reader's accent leads. The bars start on it and then follow whichever row
-  // was last played, because the two accents can stress different syllables
+  // two rows work like a switch: the selected row starts on the reader's
+  // accent and then follows whichever row was last played. The bars follow
+  // the same way, because the two accents can stress different syllables
   // (belay: UK /ˈbiːleɪ/, US /bɪˈleɪ/). An accent with no syllables of its own
   // leaves the bars as they are.
   function fillPronunciation(wrap, m, reading, ctx) {
@@ -250,9 +261,26 @@
     if (barsAccent === null) showBars(other);
     wrap.appendChild(barsSlot);
 
+    var rows = {};
+    function select(a) {
+      [featured, other].forEach(function (k) {
+        var on = k === a;
+        rows[k].classList.toggle("qp-pron-row--selected", on);
+        rows[k]._qpTag.setAttribute("aria-label", accentLabel(k) + (on ? ", selected" : ""));
+      });
+    }
+    function onPlay(a) {
+      select(a);
+      showBars(a);
+    }
+
     var pron = el("div", "qp-pron");
-    pron.appendChild(accentRow(m, reading, featured, featured, ctx, showBars));
-    pron.appendChild(accentRow(m, reading, other, featured, ctx, showBars));
+    rows[featured] = accentRow(m, reading, featured, featured, ctx, onPlay);
+    rows[other] = accentRow(m, reading, other, featured, ctx, onPlay);
+    pron.appendChild(rows[featured]);
+    pron.appendChild(rows[other]);
+    // Start on the reader's accent, unless this reading has nothing to play in it.
+    select(!rows[featured]._qpPlayable && rows[other]._qpPlayable ? other : featured);
     wrap.appendChild(pron);
   }
 
