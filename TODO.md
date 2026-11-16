@@ -49,6 +49,27 @@ visitors), not retention.
   show up in the daily snapshots with no change. Store installs have an
   `update_url`, so the planned `test-` id rule above still holds.
 
+## Retake store screenshots for the v1.0.7 accent switch
+
+**Status:** agreed 2026-11-13, Ankit doing it by hand later. Not started.
+
+**Why:** v1.0.7 turned the US/UK accent rows into a switch (separate cards,
+the selected one tinted with a brand border). Two store screenshots still
+show the old single box with dividers.
+
+**Retake (same filenames in store-listing/screenshots/, 1280x800):**
+- `1-inline-card.png`: Wikipedia "Utility (disambiguation)", select
+  "satisfaction", open the card. Play the UK row once first so the switch
+  visibly sits on UK.
+- `4-popup-result.png`: toolbar popup, look up "epitome", a few recent words
+  showing below.
+- The other three (select pill, context menu, search autocomplete) don't
+  show the card and stay as they are.
+
+**After:** check the sizes, commit, and upload to both the Chrome Web Store
+and Edge listings. Use a normal store install, not an unpacked copy, so no
+test lookups hit the live API.
+
 ---
 
 # Done
