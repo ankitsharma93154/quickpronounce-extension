@@ -197,7 +197,7 @@
   // --- links and version ----------------------------------------------------
   $("op-site").href = QP.config.SITE_URL;
   $("op-privacy").href = QP.config.PRIVACY_URL;
-  $("op-plus").href = QP.config.PLUS_URL;
+  $("op-plus").href = QP.config.PLUS_OPTIONS_URL;
   $("op-feedback").href = QP.config.CONTACT_URL;
   $("op-version").textContent =
     "QuickPronounce for " + browserName + " \u00b7 v" + chrome.runtime.getManifest().version;

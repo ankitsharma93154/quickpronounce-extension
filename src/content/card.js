@@ -507,6 +507,18 @@
       );
     }
 
+    // A few lookups left: one quiet line before the limit hits. Never the
+    // number (the cap stays unadvertised), never next to the rating prompt.
+    var usage = view.usage || {};
+    if (
+      !ctx.compact &&
+      !view.ratePrompt &&
+      typeof usage.remaining === "number" &&
+      usage.remaining <= QP.config.PLUS_LOW_AT
+    ) {
+      body.appendChild(makeLowLine(ctx));
+    }
+
     card.appendChild(body);
 
     // footer
@@ -522,6 +534,18 @@
     card.appendChild(foot);
 
     root.appendChild(card);
+  }
+
+  function makeLowLine(ctx) {
+    var line = el("div", "qp-low", "Lookups running low · ");
+    var go = el("a", "qp-link qp-focusable", "Plus removes the limit");
+    go.href = QP.config.PLUS_LOW_URL;
+    go.addEventListener("click", function (e) {
+      e.preventDefault();
+      ctx.openUrl(QP.config.PLUS_LOW_URL);
+    });
+    line.appendChild(go);
+    return line;
   }
 
   // One short paragraph above the footer, ending in the two choices.
@@ -971,7 +995,7 @@
       el("div", "qp-cap__sub", "You've used all your free lookups for now. They come back one at a time over 24 hours.")
     );
 
-    var plus = el("button", "qp-cap__cta qp-focusable", "Join the Plus waitlist");
+    var plus = el("button", "qp-cap__cta qp-focusable", "Remove the limit with Plus");
     plus.type = "button";
     plus.addEventListener("click", function () {
       ctx.openUrl(QP.config.PLUS_URL);

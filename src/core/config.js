@@ -44,7 +44,13 @@
 
     // --- QuickPronounce site links --------------------------------------
     SITE_URL: "https://www.quickpronounce.site",
-    PLUS_URL: "https://www.quickpronounce.site/plus/extension",
+    // ?src= tells the waitlist where a sign-up came from (must match SOURCES
+    // in Pronounce_web/src/lib/plus.js and api/lib/plusWaitlist.js).
+    PLUS_URL: "https://www.quickpronounce.site/plus/extension?src=ext_cap",
+    PLUS_LOW_URL: "https://www.quickpronounce.site/plus/extension?src=ext_low",
+    PLUS_OPTIONS_URL: "https://www.quickpronounce.site/plus/extension?src=ext_options",
+    // Show the quiet "running low" line once this few lookups are left.
+    PLUS_LOW_AT: 5,
     CONTACT_URL: "https://www.quickpronounce.site/contact",
     // The extension's own policy, not the website's - different data
     // practices (see Pronounce_web/src/pages/ExtensionPrivacyPolicy.js).

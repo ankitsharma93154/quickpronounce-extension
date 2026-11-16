@@ -381,6 +381,7 @@
     "}",
     ".qp-link:hover { text-decoration:underline; }",
     ".qp-brand { font-size:11px; color:var(--text-secondary); }",
+    ".qp-low { margin-top:10px; font-size:12px; color:var(--text-secondary); }",
 
     /* ---- rating prompt: one quiet box under the pronunciation, revealed
        after the first clip plays, no entry animation ---- */
